@@ -10,7 +10,6 @@
       --primary: #b91c1c;
       --primary-dark: #7f1d1d;
       --dark: #0a0a0a;
-      --black-soft: #18181b;
       --bg: #f8fafc;
       --card: #ffffff;
       --border: #e5e7eb;
@@ -18,12 +17,9 @@
       --success: #15803d;
       --danger: #dc2626;
       --warning: #d97706;
-      --white: #ffffff;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -39,7 +35,7 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 5px 18px rgba(0,0,0,0.25);
     }
 
     .nav {
@@ -75,9 +71,7 @@
       outline: none;
     }
 
-    .login-area input::placeholder {
-      color: #fecaca;
-    }
+    .login-area input::placeholder { color: #fecaca; }
 
     .badge {
       padding: 9px 12px;
@@ -153,13 +147,8 @@
       border-color: var(--primary);
     }
 
-    .tab {
-      display: none;
-    }
-
-    .tab.active {
-      display: block;
-    }
+    .tab { display: none; }
+    .tab.active { display: block; }
 
     .card {
       background: white;
@@ -193,9 +182,7 @@
       color: var(--primary-dark);
     }
 
-    h2, h3 {
-      margin-top: 0;
-    }
+    h2, h3 { margin-top: 0; }
 
     .subtitle {
       color: var(--muted);
@@ -252,9 +239,7 @@
       font-weight: bold;
     }
 
-    button:hover {
-      opacity: 0.92;
-    }
+    button:hover { opacity: 0.92; }
 
     .danger { background: var(--danger); }
     .success { background: var(--success); }
@@ -296,13 +281,9 @@
       font-weight: bold;
     }
 
-    tr:last-child td {
-      border-bottom: none;
-    }
+    tr:last-child td { border-bottom: none; }
 
-    .hidden {
-      display: none !important;
-    }
+    .hidden { display: none !important; }
 
     .message {
       display: none;
@@ -499,30 +480,23 @@
       margin-bottom: 14px;
     }
 
-    .full-profile-badges {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .full-profile-badges span {
-      background: rgba(255,255,255,0.14);
-      border: 1px solid rgba(255,255,255,0.25);
-      color: white;
-      padding: 7px 10px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: bold;
-    }
-
     .full-profile-details {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
     }
 
-    .full-profile-details .info {
-      margin-bottom: 0;
+    .full-profile-details .info { margin-bottom: 0; }
+
+    .credential-note {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #7f1d1d;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: bold;
     }
 
     @media (max-width: 900px) {
@@ -603,14 +577,14 @@
 
     <section class="hero">
       <div>
-        <h2>MAF Panthapath Student Directory</h2>
+        <h2>CA Student Directory</h2>
         <div class="btn-row">
           <button class="light" onclick="refreshAll()">Refresh</button>
         </div>
       </div>
 
       <div class="hero-box">
-        <span id="heroLabel">Total Student Profiles</span>
+        <span>Total Student Profiles</span>
         <strong id="heroNumber">0</strong>
       </div>
     </section>
@@ -838,6 +812,16 @@
           </div>
 
           <div>
+            <label>Student Personal Email / Login Email</label>
+            <input type="email" id="studentLoginEmail" placeholder="student@email.com">
+          </div>
+
+          <div>
+            <label>Temporary Login Password</label>
+            <input id="studentTempPassword" placeholder="Example: st123456">
+          </div>
+
+          <div>
             <label>Private Phone</label>
             <input id="privatePhone">
           </div>
@@ -893,7 +877,30 @@
 
     <section id="masterTab" class="tab">
       <div class="notice">
-        Master account can access student profile, student fund, data manager and user role list.
+        Master account can access student profile, student fund, data manager, user role list and student login credentials.
+      </div>
+
+      <div class="card">
+        <h2>Student Login Credentials</h2>
+
+        <div class="credential-note">
+          These credentials are saved for Master view. To make login work, create the Auth user in Supabase Authentication using the same email and password, then run the profile linking SQL.
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Student Name</th>
+              <th>Login Email</th>
+              <th>Temporary Password</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody id="credentialTable"></tbody>
+        </table>
       </div>
 
       <div class="card">
@@ -929,6 +936,7 @@
     let receivables = [];
     let payments = [];
     let userProfiles = [];
+    let studentCredentials = [];
 
     document.addEventListener("DOMContentLoaded", init);
 
@@ -1173,57 +1181,19 @@
               <div class="full-profile-subtitle">
                 CA Student Profile | M A Fazal & Co., Chartered Accountants
               </div>
-
             </div>
           </div>
 
           <div class="full-profile-details">
-            <div class="info">
-              <span>Student ID</span>
-              <strong>${escapeHtml(s.student_id)}</strong>
-            </div>
-
-            <div class="info">
-              <span>Full Name</span>
-              <strong>${escapeHtml(s.full_name)}</strong>
-            </div>
-
-            <div class="info">
-              <span>Designation</span>
-              <strong>${escapeHtml(s.designation)}</strong>
-            </div>
-
-            <div class="info">
-              <span>Registration No.</span>
-              <strong>${escapeHtml(s.registration_no)}</strong>
-            </div>
-
-            <div class="info">
-              <span>Joining Date</span>
-              <strong>${escapeHtml(s.joining_date)}</strong>
-            </div>
-
-            <div class="info">
-              <span>CA Level</span>
-              <strong>${escapeHtml(s.ca_level)}</strong>
-            </div>
-
-            <div class="info">
-              <span>CA Result</span>
-              <strong>${escapeHtml(s.ca_results)}</strong>
-            </div>
-
-            <div class="info">
-              <span>Branch</span>
-              <strong>${escapeHtml(s.branch)}</strong>
-            </div>
-
-            <div class="info">
-              <span>Status</span>
-              <strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">
-                ${escapeHtml(s.status)}
-              </strong>
-            </div>
+            <div class="info"><span>Student ID</span><strong>${escapeHtml(s.student_id)}</strong></div>
+            <div class="info"><span>Full Name</span><strong>${escapeHtml(s.full_name)}</strong></div>
+            <div class="info"><span>Designation</span><strong>${escapeHtml(s.designation)}</strong></div>
+            <div class="info"><span>Registration No.</span><strong>${escapeHtml(s.registration_no)}</strong></div>
+            <div class="info"><span>Joining Date</span><strong>${escapeHtml(s.joining_date)}</strong></div>
+            <div class="info"><span>CA Level</span><strong>${escapeHtml(s.ca_level)}</strong></div>
+            <div class="info"><span>CA Result</span><strong>${escapeHtml(s.ca_results)}</strong></div>
+            <div class="info"><span>Branch</span><strong>${escapeHtml(s.branch)}</strong></div>
+            <div class="info"><span>Status</span><strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</strong></div>
           </div>
         </div>
       `;
@@ -1564,7 +1534,26 @@
     async function loadStudentDataManager() {
       const detailsResult = await db.from("student_details").select("*");
       studentDetails = detailsResult.data || [];
+
+      if (currentProfile && currentProfile.role === "master") {
+        await loadStudentCredentials();
+      }
+
       renderDataManagerList();
+    }
+
+    async function loadStudentCredentials() {
+      const result = await db
+        .from("student_login_credentials")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (result.error) {
+        studentCredentials = [];
+        return;
+      }
+
+      studentCredentials = result.data || [];
     }
 
     function renderDataManagerList() {
@@ -1604,6 +1593,7 @@
     function editStudent(studentId) {
       const pub = students.find(s => s.student_id === studentId) || {};
       const priv = studentDetails.find(d => d.student_id === studentId) || {};
+      const cred = studentCredentials.find(c => c.student_id === studentId) || {};
 
       document.getElementById("editingStudentId").value = studentId;
       document.getElementById("studentId").value = pub.student_id || "";
@@ -1618,6 +1608,9 @@
       document.getElementById("caResults").value = pub.ca_results || "";
       document.getElementById("branch").value = pub.branch || "";
       document.getElementById("studentStatus").value = pub.status || "Active";
+
+      document.getElementById("studentLoginEmail").value = cred.login_email || "";
+      document.getElementById("studentTempPassword").value = cred.temporary_password || "";
 
       document.getElementById("privatePhone").value = priv.phone || "";
       document.getElementById("privateEmail").value = priv.email_private || "";
@@ -1659,8 +1652,16 @@
         notes: document.getElementById("privateNotes").value.trim()
       };
 
+      const loginEmail = document.getElementById("studentLoginEmail").value.trim();
+      const tempPassword = document.getElementById("studentTempPassword").value.trim();
+
       if (!publicRow.full_name) {
         showMessage("Full name is required.", "error");
+        return;
+      }
+
+      if ((loginEmail && !tempPassword) || (!loginEmail && tempPassword)) {
+        showMessage("Both student login email and temporary password are required.", "error");
         return;
       }
 
@@ -1678,9 +1679,33 @@
         return;
       }
 
+      if (loginEmail && tempPassword) {
+        const credentialRow = {
+          student_id: sid,
+          student_name: publicRow.full_name,
+          login_email: loginEmail,
+          temporary_password: tempPassword,
+          role: "student",
+          status: publicRow.status
+        };
+
+        const credentialResult = await db
+          .from("student_login_credentials")
+          .upsert(credentialRow, { onConflict: "student_id" });
+
+        if (credentialResult.error) {
+          showMessage("Student saved, but credential save failed: " + credentialResult.error.message, "error");
+          return;
+        }
+      }
+
       clearStudentForm();
       await loadPublicStudents();
       await loadStudentDataManager();
+
+      if (currentProfile && currentProfile.role === "master") {
+        await loadMasterData();
+      }
 
       showMessage("Student saved successfully.", "success");
     }
@@ -1695,8 +1720,15 @@
         return;
       }
 
+      await db.from("student_login_credentials").update({ status: "Inactive" }).eq("student_id", studentId);
+
       await loadPublicStudents();
       await loadStudentDataManager();
+
+      if (currentProfile && currentProfile.role === "master") {
+        await loadMasterData();
+      }
+
       showMessage("Student deactivated.", "success");
     }
 
@@ -1714,6 +1746,8 @@
       document.getElementById("caResults").value = "";
       document.getElementById("branch").value = "";
       document.getElementById("studentStatus").value = "Active";
+      document.getElementById("studentLoginEmail").value = "";
+      document.getElementById("studentTempPassword").value = "";
       document.getElementById("privatePhone").value = "";
       document.getElementById("privateEmail").value = "";
       document.getElementById("birthDate").value = "";
@@ -1722,15 +1756,39 @@
     }
 
     async function loadMasterData() {
-      const result = await db.from("profiles").select("*").order("full_name", { ascending: true });
+      const profileResult = await db.from("profiles").select("*").order("full_name", { ascending: true });
 
-      if (result.error) {
-        showMessage(result.error.message, "error");
+      if (profileResult.error) {
+        showMessage(profileResult.error.message, "error");
         return;
       }
 
-      userProfiles = result.data || [];
+      userProfiles = profileResult.data || [];
+
+      await loadStudentCredentials();
+
       renderMasterProfiles();
+      renderCredentialTable();
+    }
+
+    function renderCredentialTable() {
+      const tbody = document.getElementById("credentialTable");
+
+      tbody.innerHTML = studentCredentials.length === 0
+        ? "<tr><td colspan='7'>No student login credential found.</td></tr>"
+        : studentCredentials.map(function (c) {
+          return `
+            <tr>
+              <td>${escapeHtml(c.student_id)}</td>
+              <td>${escapeHtml(c.student_name)}</td>
+              <td>${escapeHtml(c.login_email)}</td>
+              <td><strong>${escapeHtml(c.temporary_password)}</strong></td>
+              <td>${escapeHtml(c.role)}</td>
+              <td>${escapeHtml(c.status)}</td>
+              <td>${escapeHtml(formatDate(c.created_at))}</td>
+            </tr>
+          `;
+        }).join("");
     }
 
     function renderMasterProfiles() {
@@ -1809,6 +1867,11 @@
       }
 
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function formatDate(value) {
+      if (!value) return "";
+      return new Date(value).toLocaleString("en-BD");
     }
 
     function escapeHtml(value) {
