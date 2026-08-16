@@ -124,6 +124,17 @@
       margin-top: 8px;
     }
 
+    .birthday-box {
+      display: none;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      padding: 13px;
+      border-radius: 14px;
+      margin-bottom: 18px;
+      font-weight: bold;
+    }
+
     .tabs {
       display: flex;
       gap: 8px;
@@ -589,6 +600,8 @@
       </div>
     </section>
 
+    <div id="birthdayBox" class="birthday-box"></div>
+
     <div class="tabs">
       <button class="tab-btn active" data-tab="publicTab" onclick="openTab('publicTab', this)">Student Profiles</button>
       <button class="tab-btn hidden" id="studentTabBtn" data-tab="studentTab" onclick="openTab('studentTab', this)">My Profile</button>
@@ -614,8 +627,8 @@
     <section id="fundTab" class="tab">
       <div class="cards">
         <div class="card stat">
-          <h3>Total Fund Balance</h3>
-          <div class="value" id="totalFundBalance">0.00</div>
+          <h3>Total Opening Balance</h3>
+          <div class="value" id="totalOpeningBalance">0.00</div>
         </div>
 
         <div class="card stat">
@@ -632,6 +645,58 @@
           <h3>Active Students</h3>
           <div class="value" id="activeStudents">0</div>
         </div>
+      </div>
+
+      <div id="openingBalanceManager" class="card hidden">
+        <h2>Add / Update Opening Balance</h2>
+        <p class="subtitle">Only Master Account can add or update opening balance.</p>
+
+        <div class="form-grid">
+          <div>
+            <label>Student</label>
+            <select id="openingStudent"></select>
+          </div>
+
+          <div>
+            <label>Opening Balance</label>
+            <input type="number" id="openingAmount" placeholder="Example: 1000">
+          </div>
+
+          <div>
+            <label>Remarks</label>
+            <input id="openingRemarks" placeholder="Previous due / previous fund balance">
+          </div>
+
+          <div>
+            <label>Status</label>
+            <select id="openingStatus">
+              <option>Active</option>
+              <option>Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button onclick="saveOpeningBalance()">Save Opening Balance</button>
+          <button class="dark" onclick="clearOpeningBalanceForm()">Clear</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Opening Balance List</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Opening Balance</th>
+              <th>Remarks</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="openingBalanceTable"></tbody>
+        </table>
       </div>
 
       <div class="row">
@@ -877,14 +942,14 @@
 
     <section id="masterTab" class="tab">
       <div class="notice">
-        Master account can access student profile, student fund, data manager, user role list and student login credentials.
+        Master account can access student profile, student fund, data manager, user role list, login credentials and opening balance.
       </div>
 
       <div class="card">
         <h2>Student Login Credentials</h2>
 
         <div class="credential-note">
-          These credentials are saved for Master view. To make login work, create the Auth user in Supabase Authentication using the same email and password, then run the profile linking SQL.
+          To make login work, create the Auth user in Supabase Authentication using the same email and password, then link profile role as student.
         </div>
 
         <table>
@@ -937,6 +1002,7 @@
     let payments = [];
     let userProfiles = [];
     let studentCredentials = [];
+    let openingBalances = [];
 
     document.addEventListener("DOMContentLoaded", init);
 
@@ -1099,7 +1165,32 @@
       students = result.data || [];
 
       document.getElementById("heroNumber").textContent = students.length;
+      renderBirthdayNotice();
       renderPublicStudents();
+    }
+
+    function renderBirthdayNotice() {
+      const box = document.getElementById("birthdayBox");
+      const today = new Date();
+      const month = today.getMonth() + 1;
+      const day = today.getDate();
+
+      const birthdayStudents = students.filter(function (s) {
+        return Number(s.birth_month) === month && Number(s.birth_day) === day;
+      });
+
+      if (birthdayStudents.length === 0) {
+        box.style.display = "none";
+        box.innerHTML = "";
+        return;
+      }
+
+      const names = birthdayStudents.map(function (s) {
+        return escapeHtml(s.full_name);
+      }).join(", ");
+
+      box.innerHTML = "Today's Birthday: " + names;
+      box.style.display = "block";
     }
 
     function renderPublicStudents() {
@@ -1208,6 +1299,28 @@
       if (role === "master") await loadMasterData();
     }
 
+    async function loadOpeningBalances() {
+      const result = await db
+        .from("student_opening_balances")
+        .select("*")
+        .order("student_name", { ascending: true });
+
+      if (result.error) {
+        openingBalances = [];
+        return;
+      }
+
+      openingBalances = result.data || [];
+    }
+
+    function getOpeningBalance(studentId) {
+      const row = openingBalances.find(function (o) {
+        return o.student_id === studentId && o.status === "Active";
+      });
+
+      return row ? Number(row.opening_balance || 0) : 0;
+    }
+
     async function loadStudentDashboard() {
       const sid = currentProfile.student_id;
 
@@ -1215,6 +1328,8 @@
         document.getElementById("studentDashboard").innerHTML = "<div class='notice'>No student ID linked with this login account.</div>";
         return;
       }
+
+      await loadOpeningBalances();
 
       const publicResult = await db.from("students").select("*").eq("student_id", sid).single();
       const privateResult = await db.from("student_details").select("*").eq("student_id", sid).maybeSingle();
@@ -1226,8 +1341,10 @@
       const recs = receivableResult.data || [];
       const pays = paymentResult.data || [];
 
+      const opening = getOpeningBalance(sid);
       const totalPaid = pays.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-      const due = recs.filter(r => r.status !== "Paid").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const unpaidReceivable = recs.filter(r => r.status !== "Paid").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const due = opening + unpaidReceivable;
 
       let recRows = recs.map(function (r) {
         return `
@@ -1284,9 +1401,9 @@
 
           <div>
             <div class="cards">
+              <div class="card stat"><h3>Opening Balance</h3><div class="value">${money(opening)}</div></div>
               <div class="card stat"><h3>Total Paid</h3><div class="value">${money(totalPaid)}</div></div>
               <div class="card stat"><h3>Due Balance</h3><div class="value">${money(due)}</div></div>
-              <div class="card stat"><h3>Total Receivables</h3><div class="value">${recs.length}</div></div>
               <div class="card stat"><h3>Total Payments</h3><div class="value">${pays.length}</div></div>
             </div>
 
@@ -1315,6 +1432,8 @@
     }
 
     async function loadFundData() {
+      await loadOpeningBalances();
+
       const recResult = await db.from("receivables").select("*").order("created_at", { ascending: false });
       const payResult = await db.from("payments").select("*").order("created_at", { ascending: false });
 
@@ -1331,7 +1450,14 @@
       receivables = recResult.data || [];
       payments = payResult.data || [];
 
+      if (currentProfile && currentProfile.role === "master") {
+        document.getElementById("openingBalanceManager").classList.remove("hidden");
+      } else {
+        document.getElementById("openingBalanceManager").classList.add("hidden");
+      }
+
       renderStudentDropdowns();
+      renderOpeningBalanceTable();
       renderFundCards();
       renderFundTables();
     }
@@ -1342,15 +1468,18 @@
       const recSelect = document.getElementById("receivableStudent");
       const paySelect = document.getElementById("paymentStudent");
       const recLinkSelect = document.getElementById("paymentReceivable");
+      const openingSelect = document.getElementById("openingStudent");
 
       recSelect.innerHTML = `<option value="ALL">All Active Students</option>`;
       paySelect.innerHTML = "";
       recLinkSelect.innerHTML = `<option value="">No linked receivable</option>`;
+      openingSelect.innerHTML = "";
 
       active.forEach(function (s) {
         const text = `${s.student_id} - ${s.full_name}`;
         recSelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
         paySelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
+        openingSelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
       });
 
       receivables.filter(r => r.status !== "Paid").forEach(function (r) {
@@ -1358,11 +1487,109 @@
       });
     }
 
-    function renderFundCards() {
-      const totalFund = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-      const totalDue = receivables.filter(r => r.status !== "Paid").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    function renderOpeningBalanceTable() {
+      const tbody = document.getElementById("openingBalanceTable");
 
-      document.getElementById("totalFundBalance").textContent = money(totalFund);
+      if (openingBalances.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5'>No opening balance found.</td></tr>";
+        return;
+      }
+
+      tbody.innerHTML = openingBalances.map(function (o) {
+        let action = "";
+
+        if (currentProfile && currentProfile.role === "master") {
+          action = `<button class="warning" onclick="editOpeningBalance('${escapeAttribute(o.student_id)}')">Edit</button>`;
+        } else {
+          action = "View only";
+        }
+
+        return `
+          <tr>
+            <td>${escapeHtml(o.student_id)} - ${escapeHtml(o.student_name)}</td>
+            <td>${money(o.opening_balance)}</td>
+            <td>${escapeHtml(o.remarks)}</td>
+            <td>${escapeHtml(o.status)}</td>
+            <td>${action}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function editOpeningBalance(studentId) {
+      const row = openingBalances.find(o => o.student_id === studentId);
+
+      if (!row) return;
+
+      document.getElementById("openingStudent").value = row.student_id;
+      document.getElementById("openingAmount").value = row.opening_balance || 0;
+      document.getElementById("openingRemarks").value = row.remarks || "";
+      document.getElementById("openingStatus").value = row.status || "Active";
+
+      showMessage("Opening balance loaded for editing.", "success");
+    }
+
+    async function saveOpeningBalance() {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can save opening balance.", "error");
+        return;
+      }
+
+      const studentId = document.getElementById("openingStudent").value;
+      const amount = Number(document.getElementById("openingAmount").value || 0);
+      const remarks = document.getElementById("openingRemarks").value.trim();
+      const status = document.getElementById("openingStatus").value;
+
+      const student = students.find(s => s.student_id === studentId);
+
+      if (!student) {
+        showMessage("Please select student.", "error");
+        return;
+      }
+
+      const row = {
+        student_id: student.student_id,
+        student_name: student.full_name,
+        opening_balance: amount,
+        remarks: remarks,
+        status: status,
+        updated_by: currentUser.id,
+        updated_at: new Date().toISOString()
+      };
+
+      const result = await db
+        .from("student_opening_balances")
+        .upsert(row, { onConflict: "student_id" });
+
+      if (result.error) {
+        showMessage(result.error.message, "error");
+        return;
+      }
+
+      clearOpeningBalanceForm();
+      await loadFundData();
+
+      showMessage("Opening balance saved successfully.", "success");
+    }
+
+    function clearOpeningBalanceForm() {
+      document.getElementById("openingAmount").value = "";
+      document.getElementById("openingRemarks").value = "";
+      document.getElementById("openingStatus").value = "Active";
+    }
+
+    function renderFundCards() {
+      const totalOpening = openingBalances
+        .filter(o => o.status === "Active")
+        .reduce((sum, o) => sum + Number(o.opening_balance || 0), 0);
+
+      const unpaidReceivable = receivables
+        .filter(r => r.status !== "Paid")
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+      const totalDue = totalOpening + unpaidReceivable;
+
+      document.getElementById("totalOpeningBalance").textContent = money(totalOpening);
       document.getElementById("totalDueBalance").textContent = money(totalDue);
       document.getElementById("totalPayments").textContent = payments.length;
       document.getElementById("activeStudents").textContent = students.filter(s => s.status === "Active").length;
@@ -1630,6 +1857,16 @@
         return;
       }
 
+      const birthDateValue = document.getElementById("birthDate").value || null;
+      let birthMonth = null;
+      let birthDay = null;
+
+      if (birthDateValue) {
+        const parts = birthDateValue.split("-");
+        birthMonth = Number(parts[1]);
+        birthDay = Number(parts[2]);
+      }
+
       const publicRow = {
         student_id: sid,
         full_name: document.getElementById("fullName").value.trim(),
@@ -1640,14 +1877,16 @@
         ca_level: document.getElementById("caLevel").value.trim(),
         ca_results: document.getElementById("caResults").value.trim(),
         branch: document.getElementById("branch").value.trim(),
-        status: document.getElementById("studentStatus").value
+        status: document.getElementById("studentStatus").value,
+        birth_month: birthMonth,
+        birth_day: birthDay
       };
 
       const privateRow = {
         student_id: sid,
         phone: document.getElementById("privatePhone").value.trim(),
         email_private: document.getElementById("privateEmail").value.trim(),
-        birth_date: document.getElementById("birthDate").value || null,
+        birth_date: birthDateValue,
         address: document.getElementById("privateAddress").value.trim(),
         notes: document.getElementById("privateNotes").value.trim()
       };
@@ -1721,6 +1960,7 @@
       }
 
       await db.from("student_login_credentials").update({ status: "Inactive" }).eq("student_id", studentId);
+      await db.from("student_opening_balances").update({ status: "Inactive" }).eq("student_id", studentId);
 
       await loadPublicStudents();
       await loadStudentDataManager();
@@ -1766,6 +2006,7 @@
       userProfiles = profileResult.data || [];
 
       await loadStudentCredentials();
+      await loadOpeningBalances();
 
       renderMasterProfiles();
       renderCredentialTable();
