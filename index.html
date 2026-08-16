@@ -998,8 +998,7 @@
       document.getElementById("heroNumber").textContent = students.length;
       renderPublicStudents();
     }
-
-    function renderPublicStudents() {function renderPublicStudents() {
+function renderPublicStudents() {
   const box = document.getElementById("publicStudentList");
   const search = document.getElementById("publicSearch").value.toLowerCase();
 
@@ -1009,7 +1008,8 @@
       safe(s.student_id).toLowerCase().includes(search) ||
       safe(s.designation).toLowerCase().includes(search) ||
       safe(s.registration_no).toLowerCase().includes(search) ||
-      safe(s.branch).toLowerCase().includes(search)
+      safe(s.branch).toLowerCase().includes(search) ||
+      safe(s.ca_results).toLowerCase().includes(search)
     );
   });
 
@@ -1022,14 +1022,40 @@
 
   rows.forEach(function (s) {
     html += `
-      <div class="public-profile-card" style="grid-template-columns: 1fr;">
+      <div class="public-profile-card">
+        <div class="public-photo">
+          ${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}
+        </div>
+
         <div>
           <h3 
-            style="cursor:pointer; color:#0f766e; margin-bottom:6px;" 
+            style="cursor:pointer; color:#0f766e; margin-bottom:8px;" 
             onclick="openPublicProfile('${escapeAttribute(s.student_id)}')"
           >
             ${escapeHtml(s.full_name)}
           </h3>
+
+          <div class="info">
+            <span>Student ID</span>
+            <strong>${escapeHtml(s.student_id)}</strong>
+          </div>
+
+          <div class="info">
+            <span>Designation</span>
+            <strong>${escapeHtml(s.designation)}</strong>
+          </div>
+
+          <div class="info">
+            <span>Branch</span>
+            <strong>${escapeHtml(s.branch)}</strong>
+          </div>
+
+          <div class="info">
+            <span>Status</span>
+            <strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">
+              ${escapeHtml(s.status)}
+            </strong>
+          </div>
         </div>
       </div>
     `;
@@ -1048,6 +1074,63 @@ function openPublicProfile(studentId) {
   if (!s) {
     box.innerHTML = "<div class='notice'>Student profile not found.</div>";
     return;
+  }
+
+  box.innerHTML = `
+    <div class="btn-row">
+      <button class="light" onclick="renderPublicStudents()">Back to Student List</button>
+    </div>
+
+    <br>
+
+    <div class="public-profile-card">
+      <div class="public-photo">
+        ${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}
+      </div>
+
+      <div>
+        <h3>${escapeHtml(s.full_name)}</h3>
+
+        <div class="info">
+          <span>Student ID</span>
+          <strong>${escapeHtml(s.student_id)}</strong>
+        </div>
+
+        <div class="info">
+          <span>Designation</span>
+          <strong>${escapeHtml(s.designation)}</strong>
+        </div>
+
+        <div class="info">
+          <span>Registration No.</span>
+          <strong>${escapeHtml(s.registration_no)}</strong>
+        </div>
+
+        <div class="info">
+          <span>Joining Date</span>
+          <strong>${escapeHtml(s.joining_date)}</strong>
+        </div>
+
+        <div class="info">
+          <span>CA Level / Result</span>
+          <strong>${escapeHtml(s.ca_level)} | ${escapeHtml(s.ca_results)}</strong>
+        </div>
+
+        <div class="info">
+          <span>Branch</span>
+          <strong>${escapeHtml(s.branch)}</strong>
+        </div>
+
+        <div class="info">
+          <span>Status</span>
+          <strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">
+            ${escapeHtml(s.status)}
+          </strong>
+        </div>
+      </div>
+    </div>
+  `;
+}
   }
 
   box.innerHTML = `
