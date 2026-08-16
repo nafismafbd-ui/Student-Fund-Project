@@ -7,16 +7,18 @@
 
   <style>
     :root {
-      --primary: #0f766e;
-      --dark: #0f172a;
+      --primary: #b91c1c;
+      --primary-dark: #7f1d1d;
+      --dark: #0a0a0a;
+      --black-soft: #18181b;
       --bg: #f8fafc;
       --card: #ffffff;
-      --border: #e2e8f0;
+      --border: #e5e7eb;
       --muted: #64748b;
-      --success: #16a34a;
+      --success: #15803d;
       --danger: #dc2626;
       --warning: #d97706;
-      --blue: #2563eb;
+      --white: #ffffff;
     }
 
     * {
@@ -31,13 +33,13 @@
     }
 
     header {
-      background: linear-gradient(135deg, #0f766e, #0f172a);
+      background: linear-gradient(135deg, #000000, #450a0a, #991b1b);
       color: white;
-      padding: 16px 22px;
+      padding: 12px 22px;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 4px 15px rgba(15, 23, 42, 0.18);
+      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.25);
     }
 
     .nav {
@@ -52,12 +54,13 @@
 
     .brand h1 {
       margin: 0;
-      font-size: 22px;
+      font-size: 24px;
+      letter-spacing: 0.3px;
     }
 
     .brand p {
       margin: 4px 0 0;
-      color: #d1d5db;
+      color: #fecaca;
       font-size: 13px;
     }
 
@@ -69,24 +72,24 @@
     }
 
     .login-area input {
-      width: 165px;
+      width: 175px;
       padding: 9px;
       border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.3);
+      border: 1px solid rgba(255,255,255,0.35);
       background: rgba(255,255,255,0.12);
       color: white;
       outline: none;
     }
 
     .login-area input::placeholder {
-      color: #d1d5db;
+      color: #fecaca;
     }
 
     .badge {
       padding: 9px 12px;
       border-radius: 20px;
-      background: rgba(255,255,255,0.16);
-      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.25);
       font-weight: bold;
       font-size: 13px;
     }
@@ -98,15 +101,16 @@
     }
 
     .hero {
-      background: linear-gradient(135deg, #0f766e, #1e293b);
+      background: linear-gradient(135deg, #111827, #450a0a, #991b1b);
       color: white;
       border-radius: 18px;
-      padding: 26px;
+      padding: 24px;
       margin-bottom: 18px;
       display: grid;
       grid-template-columns: 1.5fr 1fr;
       gap: 18px;
       align-items: center;
+      border-left: 8px solid var(--primary);
     }
 
     .hero h2 {
@@ -115,19 +119,20 @@
     }
 
     .hero p {
-      color: #dbeafe;
+      margin: 8px 0 0;
+      color: #fecaca;
       line-height: 1.6;
     }
 
     .hero-box {
-      background: rgba(255,255,255,0.14);
-      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
       border-radius: 16px;
       padding: 18px;
     }
 
     .hero-box span {
-      color: #d1d5db;
+      color: #fecaca;
       font-size: 13px;
     }
 
@@ -184,6 +189,10 @@
       margin-bottom: 16px;
     }
 
+    .stat {
+      border-left: 5px solid var(--primary);
+    }
+
     .stat h3 {
       margin: 0 0 8px;
       color: var(--muted);
@@ -193,6 +202,7 @@
     .stat .value {
       font-size: 25px;
       font-weight: bold;
+      color: var(--primary-dark);
     }
 
     h2, h3 {
@@ -229,7 +239,7 @@
 
     input:focus, select:focus, textarea:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+      box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
     }
 
     .form-grid {
@@ -261,9 +271,8 @@
     .danger { background: var(--danger); }
     .success { background: var(--success); }
     .warning { background: var(--warning); }
-    .blue { background: var(--blue); }
     .dark { background: var(--dark); }
-    .light { background: #e2e8f0; color: var(--dark); }
+    .light { background: #e5e7eb; color: var(--dark); }
 
     .btn-row {
       display: flex;
@@ -295,7 +304,7 @@
     }
 
     th {
-      background: #f1f5f9;
+      background: #f3f4f6;
       font-weight: bold;
     }
 
@@ -346,7 +355,7 @@
     .avatar {
       height: 135px;
       border-radius: 18px;
-      background: linear-gradient(135deg, #0f766e, #0f172a);
+      background: linear-gradient(135deg, #000000, #991b1b);
       color: white;
       display: grid;
       place-items: center;
@@ -364,7 +373,7 @@
 
     .info {
       border: 1px solid var(--border);
-      background: #f8fafc;
+      background: #f9fafb;
       padding: 10px;
       border-radius: 10px;
       margin-bottom: 8px;
@@ -388,27 +397,35 @@
       font-weight: bold;
     }
 
-    .public-profile-card {
+    .student-list-item {
       display: grid;
-      grid-template-columns: 90px 1fr;
-      gap: 12px;
+      grid-template-columns: 75px 1fr;
+      gap: 14px;
+      align-items: center;
       border: 1px solid var(--border);
+      border-left: 5px solid var(--primary);
       border-radius: 14px;
       padding: 12px;
       background: white;
       margin-bottom: 12px;
+      transition: 0.2s;
+    }
+
+    .student-list-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     }
 
     .public-photo {
-      width: 90px;
-      height: 90px;
+      width: 70px;
+      height: 70px;
       border-radius: 14px;
-      background: linear-gradient(135deg, #0f766e, #0f172a);
+      background: linear-gradient(135deg, #000000, #991b1b);
       color: white;
       display: grid;
       place-items: center;
       font-weight: bold;
-      font-size: 24px;
+      font-size: 22px;
       overflow: hidden;
     }
 
@@ -416,6 +433,40 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+
+    .student-name {
+      cursor: pointer;
+      color: var(--primary-dark);
+      margin: 0 0 6px;
+      font-size: 20px;
+    }
+
+    .short-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .short-meta span {
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      padding: 5px 8px;
+      border-radius: 20px;
+    }
+
+    .public-profile-card {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 12px;
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--primary);
+      border-radius: 14px;
+      padding: 12px;
+      background: white;
+      margin-bottom: 12px;
     }
 
     @media (max-width: 900px) {
@@ -443,6 +494,7 @@
         width: 100%;
       }
 
+      .student-list-item,
       .public-profile-card {
         grid-template-columns: 1fr;
       }
@@ -459,7 +511,7 @@
     <div class="nav">
       <div class="brand">
         <h1>MAF Student Server</h1>
-        <p>You can do it</p>
+        <p>CA students profile, fund ledger and data management portal</p>
       </div>
 
       <div class="login-area">
@@ -481,49 +533,41 @@
 
     <section class="hero">
       <div>
-        <h2>Student Server Dashboard</h2>
-        <p>
-          Life will go on.
-        </p>
+        <h2>CA Student Directory</h2>
+        <p>Short student profiles are shown publicly. Full profile opens after clicking the student name.</p>
         <div class="btn-row">
           <button class="light" onclick="refreshAll()">Refresh</button>
         </div>
       </div>
 
       <div class="hero-box">
-        <span id="heroLabel">Public Student Profiles</span>
+        <span id="heroLabel">Total Student Profiles</span>
         <strong id="heroNumber">0</strong>
       </div>
     </section>
 
-    <div id="birthdayNotice"></div>
-
     <div class="tabs">
-      <button class="tab-btn active" data-tab="publicTab" onclick="openTab('publicTab', this)">Public Student Profiles</button>
+      <button class="tab-btn active" data-tab="publicTab" onclick="openTab('publicTab', this)">Student Profiles</button>
       <button class="tab-btn hidden" id="studentTabBtn" data-tab="studentTab" onclick="openTab('studentTab', this)">My Profile</button>
       <button class="tab-btn hidden" id="fundTabBtn" data-tab="fundTab" onclick="openTab('fundTab', this)">Student Fund</button>
       <button class="tab-btn hidden" id="dataTabBtn" data-tab="dataTab" onclick="openTab('dataTab', this)">Student Data Manager</button>
       <button class="tab-btn hidden" id="masterTabBtn" data-tab="masterTab" onclick="openTab('masterTab', this)">Master Account</button>
     </div>
 
-    <!-- PUBLIC STUDENT PROFILE -->
     <section id="publicTab" class="tab active">
       <div class="card">
         <h2>All Student Profiles</h2>
-        <p class="subtitle">know yourself.</p>
+        <p class="subtitle">Click on a student name to view full public profile.</p>
 
         <input class="search" id="publicSearch" placeholder="Search student..." oninput="renderPublicStudents()">
-
         <div id="publicStudentList"></div>
       </div>
     </section>
 
-    <!-- STUDENT DASHBOARD -->
     <section id="studentTab" class="tab">
       <div id="studentDashboard"></div>
     </section>
 
-    <!-- FUND MANAGER DASHBOARD -->
     <section id="fundTab" class="tab">
       <div class="cards">
         <div class="card stat">
@@ -550,7 +594,6 @@
       <div class="row">
         <div class="card">
           <h2>Add Receivable</h2>
-          <p class="subtitle">Fund manager or master can add student fund due.</p>
 
           <div class="form-grid">
             <div>
@@ -581,7 +624,6 @@
 
         <div class="card">
           <h2>Receive Payment</h2>
-          <p class="subtitle">Payment will increase fund balance.</p>
 
           <div class="form-grid">
             <div>
@@ -630,6 +672,7 @@
       <div class="card">
         <h2>Receivable List</h2>
         <input class="search" id="receivableSearch" placeholder="Search receivable..." oninput="renderFundTables()">
+
         <table>
           <thead>
             <tr>
@@ -648,6 +691,7 @@
       <div class="card">
         <h2>Payment History</h2>
         <input class="search" id="paymentSearch" placeholder="Search payment..." oninput="renderFundTables()">
+
         <table>
           <thead>
             <tr>
@@ -664,11 +708,9 @@
       </div>
     </section>
 
-    <!-- DATA MANAGER DASHBOARD -->
     <section id="dataTab" class="tab">
       <div class="card">
         <h2>Add / Edit Student Data</h2>
-        <p class="subtitle">Data manager or master can add and update student profile.</p>
 
         <input type="hidden" id="editingStudentId">
 
@@ -690,7 +732,7 @@
 
           <div>
             <label>Designation</label>
-            <input id="designation" placeholder="Articled Student">
+            <input id="designation" placeholder="Article Student">
           </div>
 
           <div>
@@ -705,12 +747,12 @@
 
           <div>
             <label>CA Level</label>
-            <input id="caLevel" placeholder="Certificate / Professional Level">
+            <input id="caLevel" placeholder="Certificate Level / Professional Level">
           </div>
 
           <div>
             <label>CA Result Summary</label>
-            <input id="caResults" placeholder="Passed / Running / Pending">
+            <input id="caResults" placeholder="Running / Passed / Pending">
           </div>
 
           <div>
@@ -780,16 +822,13 @@
       </div>
     </section>
 
-    <!-- MASTER DASHBOARD -->
     <section id="masterTab" class="tab">
       <div class="notice">
-        Master account can access Public Profile, Student Fund, and Student Data Manager sections.
-        User creation is done from Supabase Authentication dashboard for now.
+        Master account can access student profile, student fund, data manager and user role list.
       </div>
 
       <div class="card">
         <h2>Login User / Role List</h2>
-        <p class="subtitle">This shows users available in the profiles table.</p>
 
         <table>
           <thead>
@@ -808,9 +847,6 @@
   </main>
 
   <script>
-    /***************
-     * REPLACE THESE TWO VALUES
-     ***************/
     const SUPABASE_URL = "https://nvmdbafhosxgdnqdvcza.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_2sfkznJBSAwmSQ2kpVuZvA_coJ1Msfu";
 
@@ -860,10 +896,6 @@
 
       showMessage("Data refreshed.", "success");
     }
-
-    /***************
-     * LOGIN
-     ***************/
 
     async function login() {
       const email = document.getElementById("loginEmail").value.trim();
@@ -934,7 +966,6 @@
       document.getElementById("logoutBtn").classList.add("hidden");
 
       hideRoleTabs();
-
       openTabById("publicTab");
     }
 
@@ -963,7 +994,6 @@
       }
 
       if (roleText === "master") {
-        document.getElementById("studentTabBtn").classList.remove("hidden");
         document.getElementById("fundTabBtn").classList.remove("hidden");
         document.getElementById("dataTabBtn").classList.remove("hidden");
         document.getElementById("masterTabBtn").classList.remove("hidden");
@@ -977,10 +1007,6 @@
       document.getElementById("dataTabBtn").classList.add("hidden");
       document.getElementById("masterTabBtn").classList.add("hidden");
     }
-
-    /***************
-     * PUBLIC STUDENTS
-     ***************/
 
     async function loadPublicStudents() {
       const result = await db
@@ -998,224 +1024,102 @@
       document.getElementById("heroNumber").textContent = students.length;
       renderPublicStudents();
     }
-function renderPublicStudents() {
-  const box = document.getElementById("publicStudentList");
-  const search = document.getElementById("publicSearch").value.toLowerCase();
 
-  const rows = students.filter(function (s) {
-    return (
-      safe(s.full_name).toLowerCase().includes(search) ||
-      safe(s.student_id).toLowerCase().includes(search) ||
-      safe(s.designation).toLowerCase().includes(search) ||
-      safe(s.registration_no).toLowerCase().includes(search) ||
-      safe(s.branch).toLowerCase().includes(search) ||
-      safe(s.ca_results).toLowerCase().includes(search)
-    );
-  });
+    function renderPublicStudents() {
+      const box = document.getElementById("publicStudentList");
+      const search = document.getElementById("publicSearch").value.toLowerCase();
 
-  if (rows.length === 0) {
-    box.innerHTML = "<div class='notice'>No student found.</div>";
-    return;
-  }
+      const rows = students.filter(function (s) {
+        return (
+          safe(s.full_name).toLowerCase().includes(search) ||
+          safe(s.student_id).toLowerCase().includes(search) ||
+          safe(s.designation).toLowerCase().includes(search) ||
+          safe(s.registration_no).toLowerCase().includes(search) ||
+          safe(s.branch).toLowerCase().includes(search) ||
+          safe(s.ca_results).toLowerCase().includes(search)
+        );
+      });
 
-  let html = "";
+      if (rows.length === 0) {
+        box.innerHTML = "<div class='notice'>No student found.</div>";
+        return;
+      }
 
-  rows.forEach(function (s) {
-    html += `
-      <div class="public-profile-card">
-        <div class="public-photo">
-          ${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}
+      let html = "";
+
+      rows.forEach(function (s) {
+        html += `
+          <div class="student-list-item">
+            <div class="public-photo">
+              ${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}
+            </div>
+
+            <div>
+              <h3 class="student-name" onclick="openPublicProfile('${escapeAttribute(s.student_id)}')">
+                ${escapeHtml(s.full_name)}
+              </h3>
+
+              <div class="short-meta">
+                <span>ID: ${escapeHtml(s.student_id)}</span>
+                <span>${escapeHtml(s.designation)}</span>
+                <span>${escapeHtml(s.branch)}</span>
+                <span>${escapeHtml(s.status)}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      box.innerHTML = html;
+    }
+
+    function openPublicProfile(studentId) {
+      const box = document.getElementById("publicStudentList");
+
+      const s = students.find(function (item) {
+        return item.student_id === studentId;
+      });
+
+      if (!s) {
+        box.innerHTML = "<div class='notice'>Student profile not found.</div>";
+        return;
+      }
+
+      box.innerHTML = `
+        <div class="btn-row">
+          <button class="light" onclick="renderPublicStudents()">Back to Student List</button>
         </div>
 
-        <div>
-          <h3 
-            style="cursor:pointer; color:#0f766e; margin-bottom:8px;" 
-            onclick="openPublicProfile('${escapeAttribute(s.student_id)}')"
-          >
-            ${escapeHtml(s.full_name)}
-          </h3>
+        <br>
 
-          <div class="info">
-            <span>Student ID</span>
-            <strong>${escapeHtml(s.student_id)}</strong>
+        <div class="public-profile-card">
+          <div class="public-photo">
+            ${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}
           </div>
 
-          <div class="info">
-            <span>Designation</span>
-            <strong>${escapeHtml(s.designation)}</strong>
-          </div>
+          <div>
+            <h3>${escapeHtml(s.full_name)}</h3>
 
-          <div class="info">
-            <span>Branch</span>
-            <strong>${escapeHtml(s.branch)}</strong>
-          </div>
-
-          <div class="info">
-            <span>Status</span>
-            <strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">
-              ${escapeHtml(s.status)}
-            </strong>
+            <div class="info"><span>Student ID</span><strong>${escapeHtml(s.student_id)}</strong></div>
+            <div class="info"><span>Designation</span><strong>${escapeHtml(s.designation)}</strong></div>
+            <div class="info"><span>Registration No.</span><strong>${escapeHtml(s.registration_no)}</strong></div>
+            <div class="info"><span>Joining Date</span><strong>${escapeHtml(s.joining_date)}</strong></div>
+            <div class="info"><span>CA Level / Result</span><strong>${escapeHtml(s.ca_level)} | ${escapeHtml(s.ca_results)}</strong></div>
+            <div class="info"><span>Branch</span><strong>${escapeHtml(s.branch)}</strong></div>
+            <div class="info"><span>Status</span><strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</strong></div>
           </div>
         </div>
-      </div>
-    `;
-  });
-
-  box.innerHTML = html;
-}
-
-function openPublicProfile(studentId) {
-  const box = document.getElementById("publicStudentList");
-
-  const s = students.find(function (item) {
-    return item.student_id === studentId;
-  });
-
-  if (!s) {
-    box.innerHTML = "<div class='notice'>Student profile not found.</div>";
-    return;
-  }
-
-  box.innerHTML = `
-    <div class="btn-row">
-      <button class="light" onclick="renderPublicStudents()">Back to Student List</button>
-    </div>
-
-    <br>
-
-    <div class="public-profile-card">
-      <div class="public-photo">
-        ${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}
-      </div>
-
-      <div>
-        <h3>${escapeHtml(s.full_name)}</h3>
-
-        <div class="info">
-          <span>Student ID</span>
-          <strong>${escapeHtml(s.student_id)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Designation</span>
-          <strong>${escapeHtml(s.designation)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Registration No.</span>
-          <strong>${escapeHtml(s.registration_no)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Joining Date</span>
-          <strong>${escapeHtml(s.joining_date)}</strong>
-        </div>
-
-        <div class="info">
-          <span>CA Level / Result</span>
-          <strong>${escapeHtml(s.ca_level)} | ${escapeHtml(s.ca_results)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Branch</span>
-          <strong>${escapeHtml(s.branch)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Status</span>
-          <strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">
-            ${escapeHtml(s.status)}
-          </strong>
-        </div>
-      </div>
-    </div>
-  `;
-}
-  }
-
-  box.innerHTML = `
-    <div class="btn-row">
-      <button class="light" onclick="renderPublicStudents()">Back to Student List</button>
-    </div>
-
-    <br>
-
-    <div class="public-profile-card">
-      <div class="public-photo">
-        ${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}
-      </div>
-
-      <div>
-        <h3>${escapeHtml(s.full_name)}</h3>
-
-        <div class="info">
-          <span>Student ID</span>
-          <strong>${escapeHtml(s.student_id)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Designation</span>
-          <strong>${escapeHtml(s.designation)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Registration No.</span>
-          <strong>${escapeHtml(s.registration_no)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Joining Date</span>
-          <strong>${escapeHtml(s.joining_date)}</strong>
-        </div>
-
-        <div class="info">
-          <span>CA Level / Result</span>
-          <strong>${escapeHtml(s.ca_level)} | ${escapeHtml(s.ca_results)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Branch</span>
-          <strong>${escapeHtml(s.branch)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Status</span>
-          <strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">
-            ${escapeHtml(s.status)}
-          </strong>
-        </div>
-      </div>
-    </div>
-  `;
-}}
-
-    /***************
-     * ROLE DATA
-     ***************/
+      `;
+    }
 
     async function loadRoleData() {
       const role = currentProfile.role;
 
-      if (role === "student") {
-        await loadStudentDashboard();
-      }
-
-      if (role === "fund_manager" || role === "master") {
-        await loadFundData();
-      }
-
-      if (role === "data_manager" || role === "master") {
-        await loadStudentDataManager();
-      }
-
-      if (role === "master") {
-        await loadMasterData();
-      }
+      if (role === "student") await loadStudentDashboard();
+      if (role === "fund_manager" || role === "master") await loadFundData();
+      if (role === "data_manager" || role === "master") await loadStudentDataManager();
+      if (role === "master") await loadMasterData();
     }
-
-    /***************
-     * STUDENT DASHBOARD
-     ***************/
 
     async function loadStudentDashboard() {
       const sid = currentProfile.student_id;
@@ -1225,29 +1129,10 @@ function openPublicProfile(studentId) {
         return;
       }
 
-      const publicResult = await db
-        .from("students")
-        .select("*")
-        .eq("student_id", sid)
-        .single();
-
-      const privateResult = await db
-        .from("student_details")
-        .select("*")
-        .eq("student_id", sid)
-        .maybeSingle();
-
-      const receivableResult = await db
-        .from("receivables")
-        .select("*")
-        .eq("student_id", sid)
-        .order("created_at", { ascending: false });
-
-      const paymentResult = await db
-        .from("payments")
-        .select("*")
-        .eq("student_id", sid)
-        .order("created_at", { ascending: false });
+      const publicResult = await db.from("students").select("*").eq("student_id", sid).single();
+      const privateResult = await db.from("student_details").select("*").eq("student_id", sid).maybeSingle();
+      const receivableResult = await db.from("receivables").select("*").eq("student_id", sid).order("created_at", { ascending: false });
+      const paymentResult = await db.from("payments").select("*").eq("student_id", sid).order("created_at", { ascending: false });
 
       const pub = publicResult.data || {};
       const priv = privateResult.data || {};
@@ -1255,14 +1140,10 @@ function openPublicProfile(studentId) {
       const pays = paymentResult.data || [];
 
       const totalPaid = pays.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-      const due = recs
-        .filter(r => r.status !== "Paid")
-        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const due = recs.filter(r => r.status !== "Paid").reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
-      let recRows = "";
-
-      recs.forEach(function (r) {
-        recRows += `
+      let recRows = recs.map(function (r) {
+        return `
           <tr>
             <td>${escapeHtml(r.description)}</td>
             <td>${money(r.amount)}</td>
@@ -1271,16 +1152,12 @@ function openPublicProfile(studentId) {
             <td>${escapeHtml(r.paid_at)}</td>
           </tr>
         `;
-      });
+      }).join("");
 
-      if (!recRows) {
-        recRows = "<tr><td colspan='5'>No receivable found.</td></tr>";
-      }
+      if (!recRows) recRows = "<tr><td colspan='5'>No receivable found.</td></tr>";
 
-      let payRows = "";
-
-      pays.forEach(function (p) {
-        payRows += `
+      let payRows = pays.map(function (p) {
+        return `
           <tr>
             <td>${escapeHtml(p.description)}</td>
             <td>${money(p.amount)}</td>
@@ -1289,11 +1166,9 @@ function openPublicProfile(studentId) {
             <td>${escapeHtml(p.note)}</td>
           </tr>
         `;
-      });
+      }).join("");
 
-      if (!payRows) {
-        payRows = "<tr><td colspan='5'>No payment found.</td></tr>";
-      }
+      if (!payRows) payRows = "<tr><td colspan='5'>No payment found.</td></tr>";
 
       document.getElementById("studentDashboard").innerHTML = `
         <div class="profile-grid">
@@ -1322,38 +1197,17 @@ function openPublicProfile(studentId) {
 
           <div>
             <div class="cards">
-              <div class="card stat">
-                <h3>Total Paid</h3>
-                <div class="value">${money(totalPaid)}</div>
-              </div>
-
-              <div class="card stat">
-                <h3>Due Balance</h3>
-                <div class="value">${money(due)}</div>
-              </div>
-
-              <div class="card stat">
-                <h3>Total Receivables</h3>
-                <div class="value">${recs.length}</div>
-              </div>
-
-              <div class="card stat">
-                <h3>Total Payments</h3>
-                <div class="value">${pays.length}</div>
-              </div>
+              <div class="card stat"><h3>Total Paid</h3><div class="value">${money(totalPaid)}</div></div>
+              <div class="card stat"><h3>Due Balance</h3><div class="value">${money(due)}</div></div>
+              <div class="card stat"><h3>Total Receivables</h3><div class="value">${recs.length}</div></div>
+              <div class="card stat"><h3>Total Payments</h3><div class="value">${pays.length}</div></div>
             </div>
 
             <div class="card">
               <h2>My Receivables</h2>
               <table>
                 <thead>
-                  <tr>
-                    <th>Description</th>
-                    <th>Amount</th>
-                    <th>Due Date</th>
-                    <th>Status</th>
-                    <th>Paid At</th>
-                  </tr>
+                  <tr><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Paid At</th></tr>
                 </thead>
                 <tbody>${recRows}</tbody>
               </table>
@@ -1363,13 +1217,7 @@ function openPublicProfile(studentId) {
               <h2>My Payments</h2>
               <table>
                 <thead>
-                  <tr>
-                    <th>Description</th>
-                    <th>Amount</th>
-                    <th>Payment Date</th>
-                    <th>Method</th>
-                    <th>Note</th>
-                  </tr>
+                  <tr><th>Description</th><th>Amount</th><th>Payment Date</th><th>Method</th><th>Note</th></tr>
                 </thead>
                 <tbody>${payRows}</tbody>
               </table>
@@ -1379,20 +1227,9 @@ function openPublicProfile(studentId) {
       `;
     }
 
-    /***************
-     * FUND MANAGER
-     ***************/
-
     async function loadFundData() {
-      const recResult = await db
-        .from("receivables")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      const payResult = await db
-        .from("payments")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const recResult = await db.from("receivables").select("*").order("created_at", { ascending: false });
+      const payResult = await db.from("payments").select("*").order("created_at", { ascending: false });
 
       if (recResult.error) {
         showMessage(recResult.error.message, "error");
@@ -1425,53 +1262,39 @@ function openPublicProfile(studentId) {
 
       active.forEach(function (s) {
         const text = `${s.student_id} - ${s.full_name}`;
-
         recSelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
         paySelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
       });
 
-      receivables
-        .filter(r => r.status !== "Paid")
-        .forEach(function (r) {
-          recLinkSelect.innerHTML += `<option value="${escapeAttribute(r.id)}">${escapeHtml(r.student_id)} - ${escapeHtml(r.description)} - ${money(r.amount)}</option>`;
-        });
+      receivables.filter(r => r.status !== "Paid").forEach(function (r) {
+        recLinkSelect.innerHTML += `<option value="${escapeAttribute(r.id)}">${escapeHtml(r.student_id)} - ${escapeHtml(r.description)} - ${money(r.amount)}</option>`;
+      });
     }
 
     function renderFundCards() {
       const totalFund = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-      const totalDue = receivables
-        .filter(r => r.status !== "Paid")
-        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const totalDue = receivables.filter(r => r.status !== "Paid").reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
       document.getElementById("totalFundBalance").textContent = money(totalFund);
       document.getElementById("totalDueBalance").textContent = money(totalDue);
       document.getElementById("totalPayments").textContent = payments.length;
       document.getElementById("activeStudents").textContent = students.filter(s => s.status === "Active").length;
-
-      document.getElementById("heroLabel").textContent = "Total Fund Balance";
-      document.getElementById("heroNumber").textContent = money(totalFund);
     }
 
     function renderFundTables() {
       const recSearch = document.getElementById("receivableSearch").value.toLowerCase();
       const paySearch = document.getElementById("paymentSearch").value.toLowerCase();
 
-      const recTable = document.getElementById("receivableTable");
-      const payTable = document.getElementById("paymentTable");
-
       const recRows = receivables.filter(function (r) {
-        return (
-          safe(r.student_id).toLowerCase().includes(recSearch) ||
+        return safe(r.student_id).toLowerCase().includes(recSearch) ||
           safe(r.student_name).toLowerCase().includes(recSearch) ||
           safe(r.description).toLowerCase().includes(recSearch) ||
-          safe(r.status).toLowerCase().includes(recSearch)
-        );
+          safe(r.status).toLowerCase().includes(recSearch);
       });
 
-      if (recRows.length === 0) {
-        recTable.innerHTML = "<tr><td colspan='6'>No receivable found.</td></tr>";
-      } else {
-        recTable.innerHTML = recRows.map(function (r) {
+      document.getElementById("receivableTable").innerHTML = recRows.length === 0
+        ? "<tr><td colspan='6'>No receivable found.</td></tr>"
+        : recRows.map(function (r) {
           return `
             <tr>
               <td>${escapeHtml(r.student_id)} - ${escapeHtml(r.student_name)}</td>
@@ -1483,21 +1306,17 @@ function openPublicProfile(studentId) {
             </tr>
           `;
         }).join("");
-      }
 
       const payRows = payments.filter(function (p) {
-        return (
-          safe(p.student_id).toLowerCase().includes(paySearch) ||
+        return safe(p.student_id).toLowerCase().includes(paySearch) ||
           safe(p.student_name).toLowerCase().includes(paySearch) ||
           safe(p.description).toLowerCase().includes(paySearch) ||
-          safe(p.method).toLowerCase().includes(paySearch)
-        );
+          safe(p.method).toLowerCase().includes(paySearch);
       });
 
-      if (payRows.length === 0) {
-        payTable.innerHTML = "<tr><td colspan='6'>No payment found.</td></tr>";
-      } else {
-        payTable.innerHTML = payRows.map(function (p) {
+      document.getElementById("paymentTable").innerHTML = payRows.length === 0
+        ? "<tr><td colspan='6'>No payment found.</td></tr>"
+        : payRows.map(function (p) {
           return `
             <tr>
               <td>${escapeHtml(p.student_id)} - ${escapeHtml(p.student_name)}</td>
@@ -1509,7 +1328,6 @@ function openPublicProfile(studentId) {
             </tr>
           `;
         }).join("");
-      }
     }
 
     async function addReceivable() {
@@ -1526,21 +1344,18 @@ function openPublicProfile(studentId) {
       let rows = [];
 
       if (sid === "ALL") {
-        rows = students
-          .filter(s => s.status === "Active")
-          .map(function (s) {
-            return {
-              student_id: s.student_id,
-              student_name: s.full_name,
-              description: description,
-              amount: amount,
-              due_date: dueDate,
-              status: "Unpaid"
-            };
-          });
+        rows = students.filter(s => s.status === "Active").map(function (s) {
+          return {
+            student_id: s.student_id,
+            student_name: s.full_name,
+            description: description,
+            amount: amount,
+            due_date: dueDate,
+            status: "Unpaid"
+          };
+        });
       } else {
         const student = students.find(s => s.student_id === sid);
-
         rows = [{
           student_id: student.student_id,
           student_name: student.full_name,
@@ -1574,7 +1389,6 @@ function openPublicProfile(studentId) {
       const note = document.getElementById("paymentNote").value.trim();
 
       let description = "Direct Payment";
-
       const student = students.find(s => s.student_id === sid);
 
       if (!student) {
@@ -1584,7 +1398,6 @@ function openPublicProfile(studentId) {
 
       if (linkedReceivableId) {
         const rec = receivables.find(r => r.id === linkedReceivableId);
-
         if (rec) {
           description = rec.description;
           if (amount <= 0) amount = Number(rec.amount || 0);
@@ -1615,10 +1428,7 @@ function openPublicProfile(studentId) {
       if (linkedReceivableId) {
         const updateResult = await db
           .from("receivables")
-          .update({
-            status: "Paid",
-            paid_at: paymentDate
-          })
+          .update({ status: "Paid", paid_at: paymentDate })
           .eq("id", linkedReceivableId);
 
         if (updateResult.error) {
@@ -1634,17 +1444,9 @@ function openPublicProfile(studentId) {
       showMessage("Payment received successfully.", "success");
     }
 
-    /***************
-     * DATA MANAGER
-     ***************/
-
     async function loadStudentDataManager() {
-      const detailsResult = await db
-        .from("student_details")
-        .select("*");
-
+      const detailsResult = await db.from("student_details").select("*");
       studentDetails = detailsResult.data || [];
-
       renderDataManagerList();
     }
 
@@ -1653,38 +1455,33 @@ function openPublicProfile(studentId) {
       const search = document.getElementById("dataSearch").value.toLowerCase();
 
       const rows = students.filter(function (s) {
-        return (
-          safe(s.student_id).toLowerCase().includes(search) ||
+        return safe(s.student_id).toLowerCase().includes(search) ||
           safe(s.full_name).toLowerCase().includes(search) ||
           safe(s.designation).toLowerCase().includes(search) ||
           safe(s.registration_no).toLowerCase().includes(search) ||
           safe(s.ca_results).toLowerCase().includes(search) ||
-          safe(s.branch).toLowerCase().includes(search)
-        );
+          safe(s.branch).toLowerCase().includes(search);
       });
 
-      if (rows.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='8'>No student found.</td></tr>";
-        return;
-      }
-
-      tbody.innerHTML = rows.map(function (s) {
-        return `
-          <tr>
-            <td>${escapeHtml(s.student_id)}</td>
-            <td>${escapeHtml(s.full_name)}</td>
-            <td>${escapeHtml(s.designation)}</td>
-            <td>${escapeHtml(s.registration_no)}</td>
-            <td>${escapeHtml(s.ca_results)}</td>
-            <td>${escapeHtml(s.branch)}</td>
-            <td><span class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</span></td>
-            <td>
-              <button class="warning" onclick="editStudent('${escapeAttribute(s.student_id)}')">Edit</button>
-              <button class="danger" onclick="deactivateStudent('${escapeAttribute(s.student_id)}')">Deactivate</button>
-            </td>
-          </tr>
-        `;
-      }).join("");
+      tbody.innerHTML = rows.length === 0
+        ? "<tr><td colspan='8'>No student found.</td></tr>"
+        : rows.map(function (s) {
+          return `
+            <tr>
+              <td>${escapeHtml(s.student_id)}</td>
+              <td>${escapeHtml(s.full_name)}</td>
+              <td>${escapeHtml(s.designation)}</td>
+              <td>${escapeHtml(s.registration_no)}</td>
+              <td>${escapeHtml(s.ca_results)}</td>
+              <td>${escapeHtml(s.branch)}</td>
+              <td><span class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</span></td>
+              <td>
+                <button class="warning" onclick="editStudent('${escapeAttribute(s.student_id)}')">Edit</button>
+                <button class="danger" onclick="deactivateStudent('${escapeAttribute(s.student_id)}')">Deactivate</button>
+              </td>
+            </tr>
+          `;
+        }).join("");
     }
 
     function editStudent(studentId) {
@@ -1750,18 +1547,14 @@ function openPublicProfile(studentId) {
         return;
       }
 
-      const publicResult = await db
-        .from("students")
-        .upsert(publicRow, { onConflict: "student_id" });
+      const publicResult = await db.from("students").upsert(publicRow, { onConflict: "student_id" });
 
       if (publicResult.error) {
         showMessage(publicResult.error.message, "error");
         return;
       }
 
-      const privateResult = await db
-        .from("student_details")
-        .upsert(privateRow, { onConflict: "student_id" });
+      const privateResult = await db.from("student_details").upsert(privateRow, { onConflict: "student_id" });
 
       if (privateResult.error) {
         showMessage(privateResult.error.message, "error");
@@ -1778,10 +1571,7 @@ function openPublicProfile(studentId) {
     async function deactivateStudent(studentId) {
       if (!confirm("Deactivate this student?")) return;
 
-      const result = await db
-        .from("students")
-        .update({ status: "Inactive" })
-        .eq("student_id", studentId);
+      const result = await db.from("students").update({ status: "Inactive" }).eq("student_id", studentId);
 
       if (result.error) {
         showMessage(result.error.message, "error");
@@ -1807,7 +1597,6 @@ function openPublicProfile(studentId) {
       document.getElementById("caResults").value = "";
       document.getElementById("branch").value = "";
       document.getElementById("studentStatus").value = "Active";
-
       document.getElementById("privatePhone").value = "";
       document.getElementById("privateEmail").value = "";
       document.getElementById("birthDate").value = "";
@@ -1815,15 +1604,8 @@ function openPublicProfile(studentId) {
       document.getElementById("privateNotes").value = "";
     }
 
-    /***************
-     * MASTER
-     ***************/
-
     async function loadMasterData() {
-      const result = await db
-        .from("profiles")
-        .select("*")
-        .order("full_name", { ascending: true });
+      const result = await db.from("profiles").select("*").order("full_name", { ascending: true });
 
       if (result.error) {
         showMessage(result.error.message, "error");
@@ -1831,34 +1613,26 @@ function openPublicProfile(studentId) {
       }
 
       userProfiles = result.data || [];
-
       renderMasterProfiles();
     }
 
     function renderMasterProfiles() {
       const tbody = document.getElementById("profileUserTable");
 
-      if (userProfiles.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='5'>No user profile found.</td></tr>";
-        return;
-      }
-
-      tbody.innerHTML = userProfiles.map(function (p) {
-        return `
-          <tr>
-            <td>${escapeHtml(p.email)}</td>
-            <td>${escapeHtml(p.full_name)}</td>
-            <td>${escapeHtml(p.student_id)}</td>
-            <td>${escapeHtml(p.role)}</td>
-            <td>${escapeHtml(p.status)}</td>
-          </tr>
-        `;
-      }).join("");
+      tbody.innerHTML = userProfiles.length === 0
+        ? "<tr><td colspan='5'>No user profile found.</td></tr>"
+        : userProfiles.map(function (p) {
+          return `
+            <tr>
+              <td>${escapeHtml(p.email)}</td>
+              <td>${escapeHtml(p.full_name)}</td>
+              <td>${escapeHtml(p.student_id)}</td>
+              <td>${escapeHtml(p.role)}</td>
+              <td>${escapeHtml(p.status)}</td>
+            </tr>
+          `;
+        }).join("");
     }
-
-    /***************
-     * UI HELPERS
-     ***************/
 
     function openTab(tabId, btn) {
       document.querySelectorAll(".tab").forEach(function (tab) {
@@ -1871,17 +1645,12 @@ function openPublicProfile(studentId) {
 
       document.getElementById(tabId).classList.add("active");
 
-      if (btn) {
-        btn.classList.add("active");
-      }
+      if (btn) btn.classList.add("active");
     }
 
     function openTabById(tabId) {
       const btn = document.querySelector('.tab-btn[data-tab="' + tabId + '"]');
-
-      if (btn) {
-        openTab(tabId, btn);
-      }
+      if (btn) openTab(tabId, btn);
     }
 
     function showMessage(text, type) {
