@@ -58,12 +58,6 @@
       letter-spacing: 0.3px;
     }
 
-    .brand p {
-      margin: 4px 0 0;
-      color: #fecaca;
-      font-size: 13px;
-    }
-
     .login-area {
       display: flex;
       gap: 8px;
@@ -116,12 +110,6 @@
     .hero h2 {
       margin: 0;
       font-size: 30px;
-    }
-
-    .hero p {
-      margin: 8px 0 0;
-      color: #fecaca;
-      line-height: 1.6;
     }
 
     .hero-box {
@@ -457,16 +445,84 @@
       border-radius: 20px;
     }
 
-    .public-profile-card {
-      display: grid;
-      grid-template-columns: 90px 1fr;
-      gap: 12px;
+    .full-profile-card {
+      background: #ffffff;
       border: 1px solid var(--border);
-      border-left: 5px solid var(--primary);
-      border-radius: 14px;
-      padding: 12px;
-      background: white;
-      margin-bottom: 12px;
+      border-left: 7px solid var(--primary);
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+    }
+
+    .full-profile-header {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 24px;
+      align-items: center;
+      background: linear-gradient(135deg, #000000, #450a0a, #991b1b);
+      color: white;
+      padding: 24px;
+      border-radius: 18px;
+      margin-bottom: 18px;
+    }
+
+    .full-profile-photo {
+      width: 220px;
+      height: 220px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #000000, #991b1b);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 58px;
+      font-weight: bold;
+      overflow: hidden;
+      border: 4px solid rgba(255,255,255,0.25);
+    }
+
+    .full-profile-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .full-profile-name {
+      font-size: 38px;
+      margin: 0 0 10px;
+      line-height: 1.15;
+    }
+
+    .full-profile-subtitle {
+      font-size: 17px;
+      color: #fecaca;
+      margin-bottom: 14px;
+    }
+
+    .full-profile-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .full-profile-badges span {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: white;
+      padding: 7px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .full-profile-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .full-profile-details .info {
+      margin-bottom: 0;
     }
 
     @media (max-width: 900px) {
@@ -485,6 +541,22 @@
       }
     }
 
+    @media (max-width: 800px) {
+      .full-profile-header,
+      .full-profile-details {
+        grid-template-columns: 1fr;
+      }
+
+      .full-profile-photo {
+        width: 100%;
+        height: 260px;
+      }
+
+      .full-profile-name {
+        font-size: 30px;
+      }
+    }
+
     @media (max-width: 550px) {
       .cards, .form-grid {
         grid-template-columns: 1fr;
@@ -494,8 +566,7 @@
         width: 100%;
       }
 
-      .student-list-item,
-      .public-profile-card {
+      .student-list-item {
         grid-template-columns: 1fr;
       }
 
@@ -503,101 +574,6 @@
         width: 100%;
       }
     }
-.full-profile-card {
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-left: 7px solid var(--primary);
-  border-radius: 18px;
-  padding: 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 10px 28px rgba(0,0,0,0.08);
-}
-
-.full-profile-header {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 24px;
-  align-items: center;
-  background: linear-gradient(135deg, #000000, #450a0a, #991b1b);
-  color: white;
-  padding: 24px;
-  border-radius: 18px;
-  margin-bottom: 18px;
-}
-
-.full-profile-photo {
-  width: 220px;
-  height: 220px;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #000000, #991b1b);
-  color: white;
-  display: grid;
-  place-items: center;
-  font-size: 58px;
-  font-weight: bold;
-  overflow: hidden;
-  border: 4px solid rgba(255,255,255,0.25);
-}
-
-.full-profile-photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.full-profile-name {
-  font-size: 38px;
-  margin: 0 0 10px;
-  line-height: 1.15;
-}
-
-.full-profile-subtitle {
-  font-size: 17px;
-  color: #fecaca;
-  margin-bottom: 14px;
-}
-
-.full-profile-badges {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.full-profile-badges span {
-  background: rgba(255,255,255,0.14);
-  border: 1px solid rgba(255,255,255,0.25);
-  color: white;
-  padding: 7px 10px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: bold;
-}
-
-.full-profile-details {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.full-profile-details .info {
-  margin-bottom: 0;
-}
-
-@media (max-width: 800px) {
-  .full-profile-header,
-  .full-profile-details {
-    grid-template-columns: 1fr;
-  }
-
-  .full-profile-photo {
-    width: 100%;
-    height: 260px;
-  }
-
-  .full-profile-name {
-    font-size: 30px;
-  }
-}
   </style>
 </head>
 
@@ -606,7 +582,6 @@
     <div class="nav">
       <div class="brand">
         <h1>MAF Student Server</h1>
-        <p>CA students profile, fund ledger and data management portal</p>
       </div>
 
       <div class="login-area">
@@ -629,7 +604,6 @@
     <section class="hero">
       <div>
         <h2>CA Student Directory</h2>
-        <p>You Will be Chartered Accountants </p>
         <div class="btn-row">
           <button class="light" onclick="refreshAll()">Refresh</button>
         </div>
@@ -652,7 +626,7 @@
     <section id="publicTab" class="tab active">
       <div class="card">
         <h2>All Student Profiles</h2>
-        <p class="subtitle">Click on a student name to view full public profile.</p>
+        <p class="subtitle">Short profile is shown below. Click student name to open full profile.</p>
 
         <input class="search" id="publicSearch" placeholder="Search student..." oninput="renderPublicStudents()">
         <div id="publicStudentList"></div>
@@ -822,7 +796,7 @@
 
           <div>
             <label>Photo URL</label>
-            <input id="photoUrl" placeholder="Optional image link">
+            <input id="photoUrl" placeholder="Paste photo direct URL here">
           </div>
 
           <div>
@@ -1169,97 +1143,115 @@
     }
 
     function openPublicProfile(studentId) {
-  const box = document.getElementById("publicStudentList");
+      const box = document.getElementById("publicStudentList");
 
-  const s = students.find(function (item) {
-    return item.student_id === studentId;
-  });
+      const s = students.find(function (item) {
+        return item.student_id === studentId;
+      });
 
-  if (!s) {
-    box.innerHTML = "<div class='notice'>Student profile not found.</div>";
-    return;
-  }
+      if (!s) {
+        box.innerHTML = "<div class='notice'>Student profile not found.</div>";
+        return;
+      }
 
-  box.innerHTML = `
-    <div class="btn-row">
-      <button class="light" onclick="renderPublicStudents()">Back to Student List</button>
-    </div>
-
-    <br>
-
-    <div class="full-profile-card">
-      <div class="full-profile-header">
-        <div class="full-profile-photo">
-          ${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}
+      box.innerHTML = `
+        <div class="btn-row">
+          <button class="light" onclick="renderPublicStudents()">Back to Student List</button>
         </div>
 
-        <div>
-          <h2 class="full-profile-name">${escapeHtml(s.full_name)}</h2>
+        <br>
 
-          <div class="full-profile-subtitle">
-            CA Student Profile | M A Fazal & Co., Chartered Accountants
+        <div class="full-profile-card">
+          <div class="full-profile-header">
+            <div class="full-profile-photo">
+              ${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}
+            </div>
+
+            <div>
+              <h2 class="full-profile-name">${escapeHtml(s.full_name)}</h2>
+
+              <div class="full-profile-subtitle">
+                CA Student Profile | M A Fazal & Co., Chartered Accountants
+              </div>
+
+              <div class="full-profile-badges">
+                <span>ID: ${escapeHtml(s.student_id)}</span>
+                <span>${escapeHtml(s.designation)}</span>
+                <span>${escapeHtml(s.branch)}</span>
+                <span>${escapeHtml(s.status)}</span>
+              </div>
+            </div>
           </div>
 
-          <div class="full-profile-badges">
-            <span>ID: ${escapeHtml(s.student_id)}</span>
-            <span>${escapeHtml(s.designation)}</span>
-            <span>${escapeHtml(s.branch)}</span>
-            <span>${escapeHtml(s.status)}</span>
+          <div class="full-profile-details">
+            <div class="info">
+              <span>Student ID</span>
+              <strong>${escapeHtml(s.student_id)}</strong>
+            </div>
+
+            <div class="info">
+              <span>Full Name</span>
+              <strong>${escapeHtml(s.full_name)}</strong>
+            </div>
+
+            <div class="info">
+              <span>Designation</span>
+              <strong>${escapeHtml(s.designation)}</strong>
+            </div>
+
+            <div class="info">
+              <span>Registration No.</span>
+              <strong>${escapeHtml(s.registration_no)}</strong>
+            </div>
+
+            <div class="info">
+              <span>Joining Date</span>
+              <strong>${escapeHtml(s.joining_date)}</strong>
+            </div>
+
+            <div class="info">
+              <span>CA Level</span>
+              <strong>${escapeHtml(s.ca_level)}</strong>
+            </div>
+
+            <div class="info">
+              <span>CA Result</span>
+              <strong>${escapeHtml(s.ca_results)}</strong>
+            </div>
+
+            <div class="info">
+              <span>Branch</span>
+              <strong>${escapeHtml(s.branch)}</strong>
+            </div>
+
+            <div class="info">
+              <span>Status</span>
+              <strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">
+                ${escapeHtml(s.status)}
+              </strong>
+            </div>
           </div>
         </div>
-      </div>
+      `;
+    }
 
-      <div class="full-profile-details">
-        <div class="info">
-          <span>Student ID</span>
-          <strong>${escapeHtml(s.student_id)}</strong>
-        </div>
+    async function loadRoleData() {
+      const role = currentProfile.role;
 
-        <div class="info">
-          <span>Full Name</span>
-          <strong>${escapeHtml(s.full_name)}</strong>
-        </div>
+      if (role === "student") await loadStudentDashboard();
+      if (role === "fund_manager" || role === "master") await loadFundData();
+      if (role === "data_manager" || role === "master") await loadStudentDataManager();
+      if (role === "master") await loadMasterData();
+    }
 
-        <div class="info">
-          <span>Designation</span>
-          <strong>${escapeHtml(s.designation)}</strong>
-        </div>
+    async function loadStudentDashboard() {
+      const sid = currentProfile.student_id;
 
-        <div class="info">
-          <span>Registration No.</span>
-          <strong>${escapeHtml(s.registration_no)}</strong>
-        </div>
+      if (!sid) {
+        document.getElementById("studentDashboard").innerHTML = "<div class='notice'>No student ID linked with this login account.</div>";
+        return;
+      }
 
-        <div class="info">
-          <span>Joining Date</span>
-          <strong>${escapeHtml(s.joining_date)}</strong>
-        </div>
-
-        <div class="info">
-          <span>CA Level</span>
-          <strong>${escapeHtml(s.ca_level)}</strong>
-        </div>
-
-        <div class="info">
-          <span>CA Result</span>
-          <strong>${escapeHtml(s.ca_results)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Branch</span>
-          <strong>${escapeHtml(s.branch)}</strong>
-        </div>
-
-        <div class="info">
-          <span>Status</span>
-          <strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">
-            ${escapeHtml(s.status)}
-          </strong>
-        </div>
-      </div>
-    </div>
-  `;
-}
       const publicResult = await db.from("students").select("*").eq("student_id", sid).single();
       const privateResult = await db.from("student_details").select("*").eq("student_id", sid).maybeSingle();
       const receivableResult = await db.from("receivables").select("*").eq("student_id", sid).order("created_at", { ascending: false });
@@ -1528,7 +1520,7 @@
       }
 
       if (linkedReceivableId) {
-        const rec = receivables.find(r => r.id === linkedReceivableId);
+        const rec = receivables.find(r => String(r.id) === String(linkedReceivableId));
         if (rec) {
           description = rec.description;
           if (amount <= 0) amount = Number(rec.amount || 0);
