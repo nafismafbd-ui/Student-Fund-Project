@@ -413,6 +413,98 @@
       .student-list-item { grid-template-columns: 1fr; }
       .public-photo { width: 100%; }
     }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.62);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-panel {
+      width: min(1050px, 96vw);
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #ffffff;
+      border-radius: 18px;
+      border-top: 7px solid var(--primary);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+      padding: 22px;
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .modal-header h2,
+    .modal-header h3 {
+      margin: 0;
+    }
+
+    .modal-close {
+      background: #000000;
+      color: #ffffff;
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      line-height: 38px;
+      text-align: center;
+      font-size: 20px;
+      flex: 0 0 auto;
+    }
+
+    .modal-panel .full-profile-card {
+      margin-bottom: 0;
+    }
+
+
+    /* Popup full profile photo: 1:1 square format */
+    .modal-panel .full-profile-header {
+      grid-template-columns: 280px 1fr;
+    }
+
+    .modal-panel .full-profile-photo {
+      width: 260px;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      border-radius: 24px;
+      margin: 0 auto;
+    }
+
+    .modal-panel .full-profile-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+
+    @media (max-width: 800px) {
+      .modal-panel .full-profile-header {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-panel .full-profile-photo {
+        width: min(320px, 100%);
+        height: auto;
+        aspect-ratio: 1 / 1;
+      }
+    }
+
   </style>
 </head>
 
@@ -461,15 +553,20 @@
         <h2>Open Student Account</h2>
         <p class="subtitle">New students can submit their own information for review and approval.</p>
 
-        <button id="studentAccountRequestToggleBtn" onclick="toggleStudentAccountRequestPanel()">
+        <button id="studentAccountRequestToggleBtn" onclick="openStudentAccountRequestModal()">
           Open Student Account Form
         </button>
+      </div>
 
-        <div id="studentAccountRequestPanel" class="account-request-panel" style="display:none;">
-          <hr style="margin:18px 0; border:none; border-top:1px solid var(--border);">
-
-          <h3>Student Account Request Form</h3>
-          <p class="subtitle">Data Manager will review this information and Master Account will approve it.</p>
+      <div id="studentAccountRequestModal" class="modal-overlay" onclick="closeModalOnBackdrop(event, 'studentAccountRequestModal')">
+        <div class="modal-panel">
+          <div class="modal-header">
+            <div>
+              <h2>Open Student Account</h2>
+              <p class="subtitle">Data Manager will review this information and Master Account will approve it.</p>
+            </div>
+            <button class="modal-close" onclick="closeStudentAccountRequestModal()">×</button>
+          </div>
 
           <div class="form-grid">
             <div><label>Full Name</label><input id="reqFullName" placeholder="Student full name"></div>
@@ -495,8 +592,18 @@
           <div class="btn-row">
             <button onclick="submitStudentAccountRequest()">Submit Account Request</button>
             <button class="dark" onclick="clearStudentAccountRequestForm()">Clear</button>
-            <button class="light" onclick="toggleStudentAccountRequestPanel()">Close Form</button>
+            <button class="light" onclick="closeStudentAccountRequestModal()">Close</button>
           </div>
+        </div>
+      </div>
+
+      <div id="publicProfileModal" class="modal-overlay" onclick="closeModalOnBackdrop(event, 'publicProfileModal')">
+        <div class="modal-panel">
+          <div class="modal-header">
+            <h2>Student Full Profile</h2>
+            <button class="modal-close" onclick="closePublicProfileModal()">×</button>
+          </div>
+          <div id="publicProfileModalContent"></div>
         </div>
       </div>
 
@@ -948,11 +1055,16 @@
     }
 
     function openPublicProfile(studentId) {
-      const box = document.getElementById("publicStudentList");
+      const box = document.getElementById("publicProfileModalContent");
+      const modal = document.getElementById("publicProfileModal");
       const s = students.find(item => item.student_id === studentId);
-      if (!s) { box.innerHTML = "<div class='notice'>Student profile not found.</div>"; return; }
+
+      if (!s) {
+        showMessage("Student profile not found.", "error");
+        return;
+      }
+
       box.innerHTML = `
-        <div class="btn-row"><button class="light" onclick="renderPublicStudents()">Back to Student List</button></div><br>
         <div class="full-profile-card">
           <div class="full-profile-header">
             <div class="full-profile-photo">${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}</div>
@@ -970,6 +1082,34 @@
             <div class="info"><span>Status</span><strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</strong></div>
           </div>
         </div>`;
+
+      modal.classList.add("show");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closePublicProfileModal() {
+      const modal = document.getElementById("publicProfileModal");
+      if (modal) modal.classList.remove("show");
+      document.body.style.overflow = "";
+    }
+
+    function openStudentAccountRequestModal() {
+      const modal = document.getElementById("studentAccountRequestModal");
+      if (modal) modal.classList.add("show");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeStudentAccountRequestModal() {
+      const modal = document.getElementById("studentAccountRequestModal");
+      if (modal) modal.classList.remove("show");
+      document.body.style.overflow = "";
+    }
+
+    function closeModalOnBackdrop(event, modalId) {
+      if (event.target && event.target.id === modalId) {
+        event.target.classList.remove("show");
+        document.body.style.overflow = "";
+      }
     }
 
     async function loadRoleData() {
@@ -1328,61 +1468,13 @@
 
 
     function toggleStudentAccountRequestPanel() {
-      const panel = document.getElementById("studentAccountRequestPanel");
-      const btn = document.getElementById("studentAccountRequestToggleBtn");
-
-      if (!panel || !btn) return;
-
-      if (panel.style.display === "none" || panel.style.display === "") {
-        panel.style.display = "block";
-        btn.textContent = "Hide Student Account Form";
+      const modal = document.getElementById("studentAccountRequestModal");
+      if (!modal) return;
+      if (modal.classList.contains("show")) {
+        closeStudentAccountRequestModal();
       } else {
-        panel.style.display = "none";
-        btn.textContent = "Open Student Account Form";
+        openStudentAccountRequestModal();
       }
-    }
-
-    async function submitStudentAccountRequest() {
-      const fullName = document.getElementById("reqFullName").value.trim();
-      const email = document.getElementById("reqPersonalEmail").value.trim();
-      const password = document.getElementById("reqPassword").value.trim();
-
-      if (!fullName || !email || !password) {
-        showMessage("Full name, email and requested password are required.", "error");
-        return;
-      }
-
-      const row = {
-        full_name: fullName,
-        personal_email: email,
-        requested_password: password,
-        photo_url: document.getElementById("reqPhotoUrl").value.trim(),
-        designation: document.getElementById("reqDesignation").value.trim(),
-        registration_no: document.getElementById("reqRegistrationNo").value.trim(),
-        joining_date: document.getElementById("reqJoiningDate").value || null,
-        ca_level: document.getElementById("reqCaLevel").value.trim(),
-        ca_results: document.getElementById("reqCaResults").value.trim(),
-        branch: document.getElementById("reqBranch").value.trim(),
-        phone: document.getElementById("reqPhone").value.trim(),
-        birth_date: document.getElementById("reqBirthDate").value || null,
-        address: document.getElementById("reqAddress").value.trim(),
-        notes: document.getElementById("reqNotes").value.trim(),
-        status: "Submitted"
-      };
-
-      const result = await db.from("student_account_requests").insert([row]);
-
-      if (result.error) {
-        showMessage("Account request failed: " + result.error.message, "error");
-        return;
-      }
-
-      clearStudentAccountRequestForm();
-      const panel = document.getElementById("studentAccountRequestPanel");
-      const btn = document.getElementById("studentAccountRequestToggleBtn");
-      if (panel) panel.style.display = "none";
-      if (btn) btn.textContent = "Open Student Account Form";
-      showMessage("Account request submitted. Data Manager will review it, then Master Account will approve.", "success");
     }
 
     function clearStudentAccountRequestForm() {
