@@ -906,6 +906,19 @@
     </section>
   </main>
 
+
+  <div id="masterStudentProfileModal" class="modal-overlay hidden" onclick="closeModalOnBackdrop(event, 'masterStudentProfileModal')">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="masterStudentProfileModalTitle">Student Profile Details</h2>
+        <button class="modal-close" onclick="closeMasterStudentProfileModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="masterStudentProfileBody"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="printArea" class="hidden"></div>
 
   <script>
@@ -1158,35 +1171,55 @@
       return row ? Number(row.opening_balance || 0) : 0;
     }
 
-    async function loadStudentDashboard() {
-      const sid = currentProfile.student_id;
-      if (!sid) { document.getElementById("studentDashboard").innerHTML = "<div class='notice'>No student ID linked with this login account.</div>"; return; }
+    async function buildStudentProfileDashboardHtml(studentId) {
       await loadOpeningBalances();
-      const publicResult = await db.from("students").select("*").eq("student_id", sid).single();
-      const privateResult = await db.from("student_details").select("*").eq("student_id", sid).maybeSingle();
-      const receivableResult = await db.from("receivables").select("*").eq("student_id", sid).order("created_at", { ascending: false });
-      const paymentResult = await db.from("payments").select("*").eq("student_id", sid).order("created_at", { ascending: false });
+
+      const publicResult = await db.from("students").select("*").eq("student_id", studentId).single();
+      const privateResult = await db.from("student_details").select("*").eq("student_id", studentId).maybeSingle();
+      const receivableResult = await db.from("receivables").select("*").eq("student_id", studentId).order("created_at", { ascending: false });
+      const paymentResult = await db.from("payments").select("*").eq("student_id", studentId).order("created_at", { ascending: false });
+
+      if (publicResult.error || !publicResult.data) {
+        return "<div class='notice'>Student profile not found.</div>";
+      }
+
       const pub = publicResult.data || {};
       const priv = privateResult.data || {};
       const recs = receivableResult.data || [];
       const pays = paymentResult.data || [];
-      const opening = openingBalances.filter(o => o.student_id === sid && o.status === "Active").reduce((sum, o) => sum + Number(o.opening_balance || 0), 0);
+
+      const opening = openingBalances
+        .filter(o => o.student_id === studentId && o.status === "Active")
+        .reduce((sum, o) => sum + Number(o.opening_balance || 0), 0);
+
       const totalPaid = pays.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-      const unpaidReceivable = recs.filter(r => r.status !== "Paid").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const unpaidReceivable = recs
+        .filter(r => r.status !== "Paid")
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const due = opening + unpaidReceivable;
-      const recRows = recs.length ? recs.map(r => `<tr><td>${escapeHtml(r.fund_name)}</td><td>${escapeHtml(r.description)}</td><td>${money(r.amount)}</td><td>${escapeHtml(r.due_date)}</td><td><span class="${r.status === "Paid" ? "paid" : "unpaid"}">${escapeHtml(r.status)}</span></td><td>${escapeHtml(r.paid_at)}</td></tr>`).join("") : "<tr><td colspan='6'>No receivable found.</td></tr>";
-      const payRows = pays.length ? pays.map(p => `<tr><td>${escapeHtml(p.fund_name)}</td><td>${escapeHtml(p.description)}</td><td>${money(p.amount)}</td><td>${escapeHtml(p.payment_date)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.note)}</td></tr>`).join("") : "<tr><td colspan='6'>No payment found.</td></tr>";
-      document.getElementById("studentDashboard").innerHTML = `
+
+      const recRows = recs.length
+        ? recs.map(r => `<tr><td>${escapeHtml(r.fund_name)}</td><td>${escapeHtml(r.description)}</td><td>${money(r.amount)}</td><td>${escapeHtml(r.due_date)}</td><td><span class="${r.status === "Paid" ? "paid" : "unpaid"}">${escapeHtml(r.status)}</span></td><td>${escapeHtml(r.paid_at)}</td></tr>`).join("")
+        : "<tr><td colspan='6'>No receivable found.</td></tr>";
+
+      const payRows = pays.length
+        ? pays.map(p => `<tr><td>${escapeHtml(p.fund_name)}</td><td>${escapeHtml(p.description)}</td><td>${money(p.amount)}</td><td>${escapeHtml(p.payment_date)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.note)}</td></tr>`).join("")
+        : "<tr><td colspan='6'>No payment found.</td></tr>";
+
+      return `
         <div class="profile-grid">
           <div class="card">
             <div class="avatar">${pub.photo_url ? `<img src="${escapeHtml(pub.photo_url)}">` : escapeHtml(getInitials(pub.full_name))}</div>
-            <h2>${escapeHtml(pub.full_name)}</h2><p class="subtitle">${escapeHtml(pub.student_id)} | ${escapeHtml(pub.designation)}</p>
+            <h2>${escapeHtml(pub.full_name)}</h2>
+            <p class="subtitle">${escapeHtml(pub.student_id)} | ${escapeHtml(pub.designation)}</p>
+
             <div class="info"><span>Registration No.</span><strong>${escapeHtml(pub.registration_no)}</strong></div>
             <div class="info"><span>Joining Date</span><strong>${escapeHtml(pub.joining_date)}</strong></div>
             <div class="info"><span>CA Level</span><strong>${escapeHtml(pub.ca_level)}</strong></div>
             <div class="info"><span>CA Result</span><strong>${escapeHtml(pub.ca_results)}</strong></div>
             <div class="info"><span>Branch</span><strong>${escapeHtml(pub.branch)}</strong></div>
-            <div class="info"><span>Status</span><strong>${escapeHtml(pub.status)}</strong></div>
+            <div class="info"><span>Status</span><strong class="${pub.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(pub.status)}</strong></div>
+
             <h3>Private Details</h3>
             <div class="info"><span>Phone</span><strong>${escapeHtml(priv.phone)}</strong></div>
             <div class="info"><span>Email</span><strong>${escapeHtml(priv.email_private)}</strong></div>
@@ -1194,6 +1227,7 @@
             <div class="info"><span>Address</span><strong>${escapeHtml(priv.address)}</strong></div>
             <div class="info"><span>Notes</span><strong>${escapeHtml(priv.notes)}</strong></div>
           </div>
+
           <div>
             <div class="cards">
               <div class="card stat"><h3>Opening Balance</h3><div class="value">${money(opening)}</div></div>
@@ -1201,10 +1235,69 @@
               <div class="card stat"><h3>Due Balance</h3><div class="value">${money(due)}</div></div>
               <div class="card stat"><h3>Total Payments</h3><div class="value">${pays.length}</div></div>
             </div>
-            <div class="card"><h2>My Receivables</h2><table><thead><tr><th>Fund</th><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Paid At</th></tr></thead><tbody>${recRows}</tbody></table></div>
-            <div class="card"><h2>My Payments</h2><table><thead><tr><th>Fund</th><th>Description</th><th>Amount</th><th>Payment Date</th><th>Method</th><th>Note</th></tr></thead><tbody>${payRows}</tbody></table></div>
+
+            <div class="card">
+              <h2>My Receivables</h2>
+              <table>
+                <thead><tr><th>Fund</th><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Paid At</th></tr></thead>
+                <tbody>${recRows}</tbody>
+              </table>
+            </div>
+
+            <div class="card">
+              <h2>My Payments</h2>
+              <table>
+                <thead><tr><th>Fund</th><th>Description</th><th>Amount</th><th>Payment Date</th><th>Method</th><th>Note</th></tr></thead>
+                <tbody>${payRows}</tbody>
+              </table>
+            </div>
           </div>
         </div>`;
+    }
+
+    async function loadStudentDashboard() {
+      const sid = currentProfile.student_id;
+
+      if (!sid) {
+        document.getElementById("studentDashboard").innerHTML = "<div class='notice'>No student ID linked with this login account.</div>";
+        return;
+      }
+
+      document.getElementById("studentDashboard").innerHTML = await buildStudentProfileDashboardHtml(sid);
+    }
+
+    async function openMasterStudentProfile(studentId) {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can view student login-style profile details.", "error");
+        return;
+      }
+
+      const modal = document.getElementById("masterStudentProfileModal");
+      const body = document.getElementById("masterStudentProfileBody");
+      const title = document.getElementById("masterStudentProfileModalTitle");
+
+      if (!modal || !body) return;
+
+      const student = students.find(s => s.student_id === studentId);
+      if (title) title.textContent = student ? `Student Profile Details - ${student.full_name}` : "Student Profile Details";
+
+      body.innerHTML = "<div class='notice'>Loading student profile details...</div>";
+      modal.classList.remove("hidden");
+      modal.classList.add("show");
+      document.body.classList.add("modal-open-body");
+      document.body.style.overflow = "hidden";
+
+      body.innerHTML = await buildStudentProfileDashboardHtml(studentId);
+    }
+
+    function closeMasterStudentProfileModal() {
+      const modal = document.getElementById("masterStudentProfileModal");
+      if (modal) {
+        modal.classList.remove("show");
+        modal.classList.add("hidden");
+      }
+      document.body.classList.remove("modal-open-body");
+      document.body.style.overflow = "";
     }
 
     async function loadFundData() {
@@ -1809,11 +1902,15 @@
       const search = document.getElementById("dataSearch").value.toLowerCase();
       const rows = students.filter(s => safe(s.student_id).toLowerCase().includes(search) || safe(s.full_name).toLowerCase().includes(search) || safe(s.designation).toLowerCase().includes(search) || safe(s.registration_no).toLowerCase().includes(search) || safe(s.ca_results).toLowerCase().includes(search) || safe(s.branch).toLowerCase().includes(search));
       tbody.innerHTML = rows.length ? rows.map(s => {
+        const viewProfileButton = currentProfile && currentProfile.role === "master"
+          ? `<button class="success" onclick="openMasterStudentProfile('${escapeAttribute(s.student_id)}')">View Profile</button>`
+          : "";
+
         const deleteButton = currentProfile && currentProfile.role === "master"
           ? `<button class="dark" onclick="deleteStudent('${escapeAttribute(s.student_id)}')">Delete</button>`
           : "";
 
-        return `<tr><td>${escapeHtml(s.student_id)}</td><td>${escapeHtml(s.full_name)}</td><td>${escapeHtml(s.designation)}</td><td>${escapeHtml(s.registration_no)}</td><td>${escapeHtml(s.ca_results)}</td><td>${escapeHtml(s.branch)}</td><td><span class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</span></td><td><button class="warning" onclick="editStudent('${escapeAttribute(s.student_id)}')">Edit</button><button class="danger" onclick="deactivateStudent('${escapeAttribute(s.student_id)}')">Deactivate</button>${deleteButton}</td></tr>`;
+        return `<tr><td>${escapeHtml(s.student_id)}</td><td>${escapeHtml(s.full_name)}</td><td>${escapeHtml(s.designation)}</td><td>${escapeHtml(s.registration_no)}</td><td>${escapeHtml(s.ca_results)}</td><td>${escapeHtml(s.branch)}</td><td><span class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</span></td><td>${viewProfileButton}<button class="warning" onclick="editStudent('${escapeAttribute(s.student_id)}')">Edit</button><button class="danger" onclick="deactivateStudent('${escapeAttribute(s.student_id)}')">Deactivate</button>${deleteButton}</td></tr>`;
       }).join("") : "<tr><td colspan='8'>No student found.</td></tr>";
     }
 
