@@ -775,7 +775,7 @@
         <h2>Student Account Approval - Master</h2>
         <p class="subtitle">Approve only after Data Manager review. Approval will create the student profile, private details and login credential record.</p>
         <table>
-          <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Assigned ID</th><th>Review Note</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Temporary Password</th><th>Assigned ID</th><th>Review Note</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="masterRequestTable"></tbody>
         </table>
       </div>
@@ -1527,26 +1527,33 @@
       const tbody = document.getElementById("masterRequestTable");
       if (!tbody) return;
 
-      const rows = studentAccountRequests.filter(r => r.status === "Reviewed");
+      const existingStudentIds = new Set(students.map(s => safe(s.student_id)));
+      const existingCredentialIds = new Set(studentCredentials.map(c => safe(c.student_id)));
+
+      const rows = studentAccountRequests.filter(function (r) {
+        const sid = safe(r.assigned_student_id);
+        return r.status === "Reviewed" && sid && !existingStudentIds.has(sid) && !existingCredentialIds.has(sid);
+      });
 
       tbody.innerHTML = rows.length ? rows.map(r => {
         const canApprove = r.status === "Reviewed" && r.assigned_student_id;
         const action = canApprove
           ? `<button class="success" onclick="approveStudentAccountRequest('${escapeAttribute(r.id)}')">Approve</button> <button class="danger" onclick="rejectStudentAccountRequest('${escapeAttribute(r.id)}')">Reject</button>`
-          : (r.status === "Submitted" ? "Waiting for Data Manager review" : "No action");
+          : "No action";
 
         return `
           <tr>
             <td>${escapeHtml(formatDate(r.created_at))}</td>
             <td>${escapeHtml(r.full_name)}</td>
             <td>${escapeHtml(r.personal_email)}</td>
+            <td><strong>${escapeHtml(r.requested_password)}</strong></td>
             <td>${escapeHtml(r.assigned_student_id)}</td>
             <td>${escapeHtml(r.review_note)}</td>
             <td><strong>${escapeHtml(r.status)}</strong></td>
             <td>${action}</td>
           </tr>
         `;
-      }).join("") : "<tr><td colspan='7'>No reviewed account request waiting for approval.</td></tr>";
+      }).join("") : "<tr><td colspan='8'>No reviewed account request waiting for approval.</td></tr>";
     }
 
     async function approveStudentAccountRequest(requestId) {
@@ -1646,6 +1653,9 @@
       await loadPublicStudents();
       await loadStudentCredentials();
       await loadStudentAccountRequests();
+      studentAccountRequests = studentAccountRequests.filter(function (r) {
+        return String(r.id) !== String(requestId);
+      });
       renderCredentialTable();
       renderMasterRequestTable();
       showMessage("Student account approved. Now create the same email/password as an Auth user in Supabase and link profile role as student.", "success");
