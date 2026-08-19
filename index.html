@@ -250,6 +250,26 @@
       .no-print { display: none !important; }
     }
 
+
+
+    .account-open-box {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-left: 6px solid var(--primary);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .account-open-box h2 {
+      margin-bottom: 6px;
+    }
+
+    .account-request-panel {
+      margin-top: 16px;
+    }
+
     @media (max-width: 900px) {
       .hero, .row, .profile-grid { grid-template-columns: 1fr; }
       .cards { grid-template-columns: repeat(2, 1fr); }
@@ -312,27 +332,47 @@
     </div>
 
     <section id="publicTab" class="tab active">
-      <div class="card">
+      <div class="account-open-box">
         <h2>Open Student Account</h2>
-        <p class="subtitle">New students can submit their own information here. Data Manager will review it, and Master Account will approve it.</p>
-        <div class="form-grid">
-          <div><label>Full Name</label><input id="reqFullName" placeholder="Student full name"></div>
-          <div><label>Student Personal Email / Login Email</label><input type="email" id="reqPersonalEmail" placeholder="student@email.com"></div>
-          <div><label>Requested Login Password</label><input id="reqPassword" placeholder="Example: st123456"></div>
-          <div><label>Photo URL</label><input id="reqPhotoUrl" placeholder="Optional direct photo link"></div>
-          <div><label>Designation</label><input id="reqDesignation" placeholder="Article Student"></div>
-          <div><label>Registration No.</label><input id="reqRegistrationNo" placeholder="ICAB registration no."></div>
-          <div><label>Joining Date</label><input type="date" id="reqJoiningDate"></div>
-          <div><label>CA Level</label><input id="reqCaLevel" placeholder="Certificate Level / Professional Level"></div>
-          <div><label>CA Result Summary</label><input id="reqCaResults" placeholder="Running / Passed / Pending"></div>
-          <div><label>Branch</label><input id="reqBranch" placeholder="Panthapath / Bangla Motor"></div>
-          <div><label>Phone</label><input id="reqPhone" placeholder="Private phone"></div>
-          <div><label>Birth Date</label><input type="date" id="reqBirthDate"></div>
-          <div><label>Address</label><input id="reqAddress" placeholder="Private address"></div>
+        <p class="subtitle">New students can submit their own information for review and approval.</p>
+
+        <button id="studentAccountRequestToggleBtn" onclick="toggleStudentAccountRequestPanel()">
+          Open Student Account Form
+        </button>
+
+        <div id="studentAccountRequestPanel" class="account-request-panel" style="display:none;">
+          <hr style="margin:18px 0; border:none; border-top:1px solid var(--border);">
+
+          <h3>Student Account Request Form</h3>
+          <p class="subtitle">Data Manager will review this information and Master Account will approve it.</p>
+
+          <div class="form-grid">
+            <div><label>Full Name</label><input id="reqFullName" placeholder="Student full name"></div>
+            <div><label>Student Personal Email / Login Email</label><input type="email" id="reqPersonalEmail" placeholder="student@email.com"></div>
+            <div><label>Requested Login Password</label><input id="reqPassword" placeholder="Example: st123456"></div>
+            <div><label>Photo URL</label><input id="reqPhotoUrl" placeholder="Optional direct photo link"></div>
+            <div><label>Designation</label><input id="reqDesignation" placeholder="Article Student"></div>
+            <div><label>Registration No.</label><input id="reqRegistrationNo" placeholder="ICAB registration no."></div>
+            <div><label>Joining Date</label><input type="date" id="reqJoiningDate"></div>
+            <div><label>CA Level</label><input id="reqCaLevel" placeholder="Certificate Level / Professional Level"></div>
+            <div><label>CA Result Summary</label><input id="reqCaResults" placeholder="Running / Passed / Pending"></div>
+            <div><label>Branch</label><input id="reqBranch" placeholder="Panthapath / Bangla Motor"></div>
+            <div><label>Phone</label><input id="reqPhone" placeholder="Private phone"></div>
+            <div><label>Birth Date</label><input type="date" id="reqBirthDate"></div>
+            <div><label>Address</label><input id="reqAddress" placeholder="Private address"></div>
+          </div>
+
+          <br>
+
+          <label>Notes</label>
+          <textarea id="reqNotes" placeholder="Optional message"></textarea>
+
+          <div class="btn-row">
+            <button onclick="submitStudentAccountRequest()">Submit Account Request</button>
+            <button class="dark" onclick="clearStudentAccountRequestForm()">Clear</button>
+            <button class="light" onclick="toggleStudentAccountRequestPanel()">Close Form</button>
+          </div>
         </div>
-        <br>
-        <label>Notes</label><textarea id="reqNotes" placeholder="Optional message"></textarea>
-        <div class="btn-row"><button onclick="submitStudentAccountRequest()">Submit Account Request</button><button class="dark" onclick="clearStudentAccountRequestForm()">Clear</button></div>
       </div>
 
       <div class="card">
@@ -1090,6 +1130,23 @@
       }, 200);
     }
 
+
+
+    function toggleStudentAccountRequestPanel() {
+      const panel = document.getElementById("studentAccountRequestPanel");
+      const btn = document.getElementById("studentAccountRequestToggleBtn");
+
+      if (!panel || !btn) return;
+
+      if (panel.style.display === "none" || panel.style.display === "") {
+        panel.style.display = "block";
+        btn.textContent = "Hide Student Account Form";
+      } else {
+        panel.style.display = "none";
+        btn.textContent = "Open Student Account Form";
+      }
+    }
+
     async function submitStudentAccountRequest() {
       const fullName = document.getElementById("reqFullName").value.trim();
       const email = document.getElementById("reqPersonalEmail").value.trim();
@@ -1126,6 +1183,10 @@
       }
 
       clearStudentAccountRequestForm();
+      const panel = document.getElementById("studentAccountRequestPanel");
+      const btn = document.getElementById("studentAccountRequestToggleBtn");
+      if (panel) panel.style.display = "none";
+      if (btn) btn.textContent = "Open Student Account Form";
       showMessage("Account request submitted. Data Manager will review it, then Master Account will approve.", "success");
     }
 
@@ -1545,55 +1606,6 @@
     }
 
     function escapeAttribute(value) { return String(value || "").replaceAll("\\", "\\\\").replaceAll("'", "\\'"); }
- function escapeAttribute(value) {
-  return String(value || "")
-    .replaceAll("\\", "\\\\")
-    .replaceAll("'", "\\'");
-}
-
-/* PASTE NEW JAVASCRIPT CODE HERE */
-
-function toggleStudentAccountRequestPanel() {
-  const panel = document.getElementById("studentAccountRequestPanel");
-  const btn = document.getElementById("studentAccountRequestToggleBtn");
-
-  if (!panel || !btn) return;
-
-  panel.classList.toggle("hidden");
-
-  if (panel.classList.contains("hidden")) {
-    btn.textContent = "Open Student Account Form";
-  } else {
-    btn.textContent = "Hide Student Account Form";
-  }
-}
-
-function clearStudentAccountRequestForm() {
-  const ids = [
-    "requestFullName",
-    "requestLoginEmail",
-    "requestPassword",
-    "requestPhotoUrl",
-    "requestDesignation",
-    "requestRegistrationNo",
-    "requestJoiningDate",
-    "requestCaLevel",
-    "requestCaResults",
-    "requestBranch",
-    "requestPhone",
-    "requestBirthDate",
-    "requestAddress",
-    "requestNotes"
-  ];
-
-  ids.forEach(function (id) {
-    const el = document.getElementById(id);
-    if (el) el.value = "";
-  });
-}
-</script>
-</body>
-</html>
   </script>
 </body>
 </html>
