@@ -1545,6 +1545,55 @@
     }
 
     function escapeAttribute(value) { return String(value || "").replaceAll("\\", "\\\\").replaceAll("'", "\\'"); }
+ function escapeAttribute(value) {
+  return String(value || "")
+    .replaceAll("\\", "\\\\")
+    .replaceAll("'", "\\'");
+}
+
+/* PASTE NEW JAVASCRIPT CODE HERE */
+
+function toggleStudentAccountRequestPanel() {
+  const panel = document.getElementById("studentAccountRequestPanel");
+  const btn = document.getElementById("studentAccountRequestToggleBtn");
+
+  if (!panel || !btn) return;
+
+  panel.classList.toggle("hidden");
+
+  if (panel.classList.contains("hidden")) {
+    btn.textContent = "Open Student Account Form";
+  } else {
+    btn.textContent = "Hide Student Account Form";
+  }
+}
+
+function clearStudentAccountRequestForm() {
+  const ids = [
+    "requestFullName",
+    "requestLoginEmail",
+    "requestPassword",
+    "requestPhotoUrl",
+    "requestDesignation",
+    "requestRegistrationNo",
+    "requestJoiningDate",
+    "requestCaLevel",
+    "requestCaResults",
+    "requestBranch",
+    "requestPhone",
+    "requestBirthDate",
+    "requestAddress",
+    "requestNotes"
+  ];
+
+  ids.forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+}
+</script>
+</body>
+</html>
   </script>
 </body>
 </html>
