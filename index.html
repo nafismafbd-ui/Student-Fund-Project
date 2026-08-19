@@ -1,58 +1,1670 @@
-drop policy if exists "master can delete students" on public.students;
-create policy "master can delete students"
-on public.students
-for delete
-to authenticated
-using (
-  exists (
-    select 1
-    from public.profiles p
-    where p.id = auth.uid()
-    and p.role = 'master'
-  )
-);
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MAF Student Server</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --primary: #b91c1c;
+      --primary-dark: #7f1d1d;
+      --dark: #0a0a0a;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --muted: #64748b;
+      --success: #15803d;
+      --danger: #dc2626;
+      --warning: #d97706;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--dark);
+    }
+
+    header {
+      background: linear-gradient(135deg, #000000, #450a0a, #991b1b);
+      color: white;
+      padding: 12px 22px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 5px 18px rgba(0,0,0,0.25);
+    }
+
+    .nav {
+      max-width: 1250px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0.3px;
+    }
+
+    .login-area {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .login-area input {
+      width: 175px;
+      padding: 9px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.12);
+      color: white;
+      outline: none;
+    }
+
+    .login-area input::placeholder { color: #fecaca; }
+
+    .badge {
+      padding: 9px 12px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.25);
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .container {
+      max-width: 1250px;
+      margin: auto;
+      padding: 22px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #111827, #450a0a, #991b1b);
+      color: white;
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 18px;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 18px;
+      align-items: center;
+      border-left: 8px solid var(--primary);
+    }
+
+    .hero h2 { margin: 0; font-size: 30px; }
+
+    .hero-box {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .hero-box span { color: #fecaca; font-size: 13px; }
+    .hero-box strong { display: block; font-size: 34px; margin-top: 8px; }
+
+    .birthday-box {
+      display: none;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      padding: 13px;
+      border-radius: 14px;
+      margin-bottom: 18px;
+      font-weight: bold;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--dark);
+      padding: 11px 15px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .tab { display: none; }
+    .tab.active { display: block; }
+
+    .card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      margin-bottom: 16px;
+    }
+
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
+    .stat { border-left: 5px solid var(--primary); }
+    .stat h3 { margin: 0 0 8px; color: var(--muted); font-size: 14px; }
+    .stat .value { font-size: 25px; font-weight: bold; color: var(--primary-dark); }
+
+    h2, h3 { margin-top: 0; }
+    .subtitle { color: var(--muted); margin-top: -8px; font-size: 13px; }
+
+    label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; font-weight: bold; }
+    input, select, textarea {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    textarea { resize: vertical; min-height: 80px; }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12); }
+
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover { opacity: 0.92; }
+    .danger { background: var(--danger); }
+    .success { background: var(--success); }
+    .warning { background: var(--warning); }
+    .dark { background: var(--dark); }
+    .light { background: #e5e7eb; color: var(--dark); }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .search { max-width: 360px; margin-bottom: 12px; }
+
+    table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 13px; vertical-align: top; }
+    th { background: #f3f4f6; font-weight: bold; }
+    tr:last-child td { border-bottom: none; }
+
+    .hidden { display: none !important; }
+
+    .message { display: none; padding: 12px; border-radius: 10px; margin-bottom: 14px; font-weight: bold; }
+    .message.success { display: block; background: #dcfce7; color: #166534; }
+    .message.error { display: block; background: #fee2e2; color: #991b1b; }
+
+    .active-status, .paid { color: var(--success); font-weight: bold; }
+    .inactive-status, .unpaid { color: var(--danger); font-weight: bold; }
+
+    .profile-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; }
+    .avatar { height: 135px; border-radius: 18px; background: linear-gradient(135deg, #000000, #991b1b); color: white; display: grid; place-items: center; font-size: 42px; font-weight: bold; margin-bottom: 14px; overflow: hidden; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .info { border: 1px solid var(--border); background: #f9fafb; padding: 10px; border-radius: 10px; margin-bottom: 8px; }
+    .info span { display: block; font-size: 12px; color: var(--muted); font-weight: bold; margin-bottom: 4px; }
+
+    .notice { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; padding: 13px; border-radius: 12px; margin-bottom: 14px; font-weight: bold; }
+
+    .student-list-item { display: grid; grid-template-columns: 75px 1fr; gap: 14px; align-items: center; border: 1px solid var(--border); border-left: 5px solid var(--primary); border-radius: 14px; padding: 12px; background: white; margin-bottom: 12px; transition: 0.2s; }
+    .student-list-item:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+
+    .public-photo { width: 70px; height: 70px; border-radius: 14px; background: linear-gradient(135deg, #000000, #991b1b); color: white; display: grid; place-items: center; font-weight: bold; font-size: 22px; overflow: hidden; }
+    .public-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .student-name { cursor: pointer; color: var(--primary-dark); margin: 0 0 6px; font-size: 20px; }
+
+    .short-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+    .short-meta span { background: #f3f4f6; border: 1px solid var(--border); padding: 5px 8px; border-radius: 20px; }
+
+    .full-profile-card { background: #ffffff; border: 1px solid var(--border); border-left: 7px solid var(--primary); border-radius: 18px; padding: 20px; margin-bottom: 16px; box-shadow: 0 10px 28px rgba(0,0,0,0.08); }
+    .full-profile-header { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: center; background: linear-gradient(135deg, #000000, #450a0a, #991b1b); color: white; padding: 24px; border-radius: 18px; margin-bottom: 18px; }
+    .full-profile-photo { width: 220px; height: 220px; border-radius: 22px; background: linear-gradient(135deg, #000000, #991b1b); color: white; display: grid; place-items: center; font-size: 58px; font-weight: bold; overflow: hidden; border: 4px solid rgba(255,255,255,0.25); }
+    .full-profile-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .full-profile-name { font-size: 38px; margin: 0 0 10px; line-height: 1.15; }
+    .full-profile-subtitle { font-size: 17px; color: #fecaca; margin-bottom: 14px; }
+    .full-profile-details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .full-profile-details .info { margin-bottom: 0; }
+
+    .credential-note { background: #fef2f2; border: 1px solid #fecaca; color: #7f1d1d; padding: 12px; border-radius: 12px; margin-bottom: 12px; font-size: 13px; font-weight: bold; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
+      .no-print { display: none !important; }
+    }
 
 
-drop policy if exists "master can delete student details" on public.student_details;
-create policy "master can delete student details"
-on public.student_details
-for delete
-to authenticated
-using (
-  exists (
-    select 1
-    from public.profiles p
-    where p.id = auth.uid()
-    and p.role = 'master'
-  )
-);
+
+    .account-open-box {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-left: 6px solid var(--primary);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .account-open-box h2 {
+      margin-bottom: 6px;
+    }
+
+    .account-request-panel {
+      margin-top: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .hero, .row, .profile-grid { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+
+    @media (max-width: 800px) {
+      .full-profile-header, .full-profile-details { grid-template-columns: 1fr; }
+      .full-profile-photo { width: 100%; height: 260px; }
+      .full-profile-name { font-size: 30px; }
+    }
+
+    @media (max-width: 550px) {
+      .cards, .form-grid { grid-template-columns: 1fr; }
+      .login-area input, .login-area button, .badge { width: 100%; }
+      .student-list-item { grid-template-columns: 1fr; }
+      .public-photo { width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="nav">
+      <div class="brand"><h1>MAF Student Server</h1></div>
+      <div class="login-area">
+        <span id="loginStatus" class="badge">Not logged in</span>
+        <div id="loginForm" class="login-area">
+          <input type="email" id="loginEmail" placeholder="Login ID / Email">
+          <input type="password" id="loginPassword" placeholder="Password">
+          <button class="light" onclick="login()">Login</button>
+        </div>
+        <button id="logoutBtn" class="danger hidden" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="messageBox" class="message"></div>
+
+    <section class="hero">
+      <div>
+        <h2>CA Student Directory</h2>
+        <div class="btn-row"><button class="light" onclick="refreshAll()">Refresh</button></div>
+      </div>
+      <div class="hero-box">
+        <span>Total Student Profiles</span>
+        <strong id="heroNumber">0</strong>
+      </div>
+    </section>
+
+    <div id="birthdayBox" class="birthday-box"></div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="publicTab" onclick="openTab('publicTab', this)">Student Profiles</button>
+      <button class="tab-btn hidden" id="studentTabBtn" data-tab="studentTab" onclick="openTab('studentTab', this)">My Profile</button>
+      <button class="tab-btn hidden" id="fundTabBtn" data-tab="fundTab" onclick="openTab('fundTab', this)">Student Fund</button>
+      <button class="tab-btn hidden" id="dataTabBtn" data-tab="dataTab" onclick="openTab('dataTab', this)">Student Data Manager</button>
+      <button class="tab-btn hidden" id="masterTabBtn" data-tab="masterTab" onclick="openTab('masterTab', this)">Master Account</button>
+    </div>
+
+    <section id="publicTab" class="tab active">
+      <div class="account-open-box">
+        <h2>Open Student Account</h2>
+        <p class="subtitle">New students can submit their own information for review and approval.</p>
+
+        <button id="studentAccountRequestToggleBtn" onclick="toggleStudentAccountRequestPanel()">
+          Open Student Account Form
+        </button>
+
+        <div id="studentAccountRequestPanel" class="account-request-panel" style="display:none;">
+          <hr style="margin:18px 0; border:none; border-top:1px solid var(--border);">
+
+          <h3>Student Account Request Form</h3>
+          <p class="subtitle">Data Manager will review this information and Master Account will approve it.</p>
+
+          <div class="form-grid">
+            <div><label>Full Name</label><input id="reqFullName" placeholder="Student full name"></div>
+            <div><label>Student Personal Email / Login Email</label><input type="email" id="reqPersonalEmail" placeholder="student@email.com"></div>
+            <div><label>Requested Login Password</label><input id="reqPassword" placeholder="Example: st123456"></div>
+            <div><label>Photo URL</label><input id="reqPhotoUrl" placeholder="Optional direct photo link"></div>
+            <div><label>Designation</label><input id="reqDesignation" placeholder="Article Student"></div>
+            <div><label>Registration No.</label><input id="reqRegistrationNo" placeholder="ICAB registration no."></div>
+            <div><label>Joining Date</label><input type="date" id="reqJoiningDate"></div>
+            <div><label>CA Level</label><input id="reqCaLevel" placeholder="Certificate Level / Professional Level"></div>
+            <div><label>CA Result Summary</label><input id="reqCaResults" placeholder="Running / Passed / Pending"></div>
+            <div><label>Branch</label><input id="reqBranch" placeholder="Panthapath / Bangla Motor"></div>
+            <div><label>Phone</label><input id="reqPhone" placeholder="Private phone"></div>
+            <div><label>Birth Date</label><input type="date" id="reqBirthDate"></div>
+            <div><label>Address</label><input id="reqAddress" placeholder="Private address"></div>
+          </div>
+
+          <br>
+
+          <label>Notes</label>
+          <textarea id="reqNotes" placeholder="Optional message"></textarea>
+
+          <div class="btn-row">
+            <button onclick="submitStudentAccountRequest()">Submit Account Request</button>
+            <button class="dark" onclick="clearStudentAccountRequestForm()">Clear</button>
+            <button class="light" onclick="toggleStudentAccountRequestPanel()">Close Form</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>All Student Profiles</h2>
+        <p class="subtitle">Short profile is shown below. Click student name to open full profile.</p>
+        <input class="search" id="publicSearch" placeholder="Search student..." oninput="renderPublicStudents()">
+        <div id="publicStudentList"></div>
+      </div>
+    </section>
+
+    <section id="studentTab" class="tab"><div id="studentDashboard"></div></section>
+
+    <section id="fundTab" class="tab">
+      <div class="cards">
+        <div class="card stat"><h3>Total Opening Balance</h3><div class="value" id="totalOpeningBalance">0.00</div></div>
+        <div class="card stat"><h3>Total Due</h3><div class="value" id="totalDueBalance">0.00</div></div>
+        <div class="card stat"><h3>Total Received</h3><div class="value" id="totalReceivedBalance">0.00</div></div>
+        <div class="card stat"><h3>Total Payment</h3><div class="value" id="totalPaymentBalance">0.00</div></div>
+      </div>
+
+      <div id="fundNameManager" class="card hidden">
+        <h2>Fund Name Setup</h2>
+        <p class="subtitle">Only Master Account can create fund names.</p>
+        <div class="form-grid">
+          <div><label>Fund Name</label><input id="newFundName" placeholder="Example: Welfare Fund"></div>
+          <div><label>Description</label><input id="newFundDescription" placeholder="Optional"></div>
+        </div>
+        <div class="btn-row"><button onclick="saveFundName()">Save Fund Name</button></div>
+      </div>
+
+      <div id="openingBalanceManager" class="card hidden">
+        <h2>Add / Update Opening Balance</h2>
+        <p class="subtitle">Opening balance is maintained by student and fund name. Only Master can add/update.</p>
+        <div class="form-grid">
+          <div><label>Fund Name</label><select id="openingFund"></select></div>
+          <div><label>Student</label><select id="openingStudent"></select></div>
+          <div><label>Opening Balance</label><input type="number" id="openingAmount" placeholder="Example: 1000"></div>
+          <div><label>Status</label><select id="openingStatus"><option>Active</option><option>Inactive</option></select></div>
+          <div><label>Remarks</label><input id="openingRemarks" placeholder="Previous due / previous fund balance"></div>
+        </div>
+        <div class="btn-row">
+          <button onclick="saveOpeningBalance()">Save Opening Balance</button>
+          <button class="dark" onclick="clearOpeningBalanceForm()">Clear</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Opening Balance List</h2>
+        <table>
+          <thead><tr><th>Fund</th><th>Student</th><th>Opening Balance</th><th>Remarks</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="openingBalanceTable"></tbody>
+        </table>
+      </div>
+
+      <div class="row">
+        <div class="card">
+          <h2>Add Receivable</h2>
+          <div class="form-grid">
+            <div><label>Fund Name</label><select id="receivableFund"></select></div>
+            <div><label>Student</label><select id="receivableStudent"></select></div>
+            <div><label>Amount</label><input type="number" id="receivableAmount" placeholder="Example: 500"></div>
+            <div><label>Due Date</label><input type="date" id="receivableDueDate"></div>
+            <div><label>Description</label><input id="receivableDescription" placeholder="Monthly fund"></div>
+          </div>
+          <div class="btn-row"><button onclick="addReceivable()">Add Receivable</button></div>
+        </div>
+
+        <div class="card">
+          <h2>Receive Student Fund</h2>
+          <div class="form-grid">
+            <div><label>Fund Name</label><select id="paymentFund"></select></div>
+            <div><label>Student</label><select id="paymentStudent"></select></div>
+            <div><label>Linked Receivable</label><select id="paymentReceivable"></select></div>
+            <div><label>Amount</label><input type="number" id="paymentAmount" placeholder="Example: 500"></div>
+            <div><label>Payment Date</label><input type="date" id="paymentDate"></div>
+            <div><label>Method</label><select id="paymentMethod"><option>Cash</option><option>Bkash</option><option>Nagad</option><option>Bank</option><option>Other</option></select></div>
+            <div><label>Reference No.</label><input id="paymentReference" placeholder="Optional"></div>
+            <div><label>Note</label><input id="paymentNote" placeholder="Optional"></div>
+          </div>
+          <div class="btn-row"><button class="success" onclick="addPayment()">Receive Fund</button></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Fund Payment / Expense</h2>
+        <div class="form-grid">
+          <div><label>Fund Name</label><select id="expenseFund"></select></div>
+          <div><label>Payment Date</label><input type="date" id="expenseDate"></div>
+          <div><label>Payee Name</label><input id="expensePayee" placeholder="Paid to"></div>
+          <div><label>Amount</label><input type="number" id="expenseAmount" placeholder="Example: 300"></div>
+          <div><label>Description</label><input id="expenseDescription" placeholder="Tea / Stationery / Other"></div>
+          <div><label>Method</label><select id="expenseMethod"><option>Cash</option><option>Bkash</option><option>Nagad</option><option>Bank</option><option>Other</option></select></div>
+          <div><label>Reference No.</label><input id="expenseReference" placeholder="Optional"></div>
+          <div><label>Note</label><input id="expenseNote" placeholder="Optional"></div>
+        </div>
+        <div class="btn-row"><button class="warning" onclick="addFundPayment()">Add Fund Payment</button></div>
+      </div>
+
+      <div class="card">
+        <h2>Daily Voucher</h2>
+        <p class="subtitle">One voucher can include multiple received/payment transactions of one day.</p>
+        <div class="form-grid">
+          <div><label>Voucher Date</label><input type="date" id="voucherDate"></div>
+          <div><label>Fund Name</label><select id="voucherFund"></select></div>
+          <div><label>Voucher Type</label><select id="voucherType"><option>Combined</option><option>Received</option><option>Payment</option></select></div>
+        </div>
+        <div class="btn-row"><button onclick="printDailyVoucher()">Print Daily Voucher</button></div>
+      </div>
+
+      <div class="card">
+        <h2>Monthly Payment Sheet</h2>
+        <p class="subtitle">Printable monthly student sheet with signature column.</p>
+        <div class="form-grid">
+          <div><label>Month</label><input type="month" id="monthlySheetMonth"></div>
+          <div><label>Fund Name</label><select id="monthlySheetFund"></select></div>
+        </div>
+        <div class="btn-row"><button onclick="printMonthlySheet()">Print Monthly Sheet</button></div>
+      </div>
+
+      <div class="card">
+        <h2>Receivable List</h2>
+        <input class="search" id="receivableSearch" placeholder="Search receivable..." oninput="renderFundTables()">
+        <table>
+          <thead><tr><th>Fund</th><th>Student</th><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Paid At</th></tr></thead>
+          <tbody id="receivableTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Received Fund History</h2>
+        <input class="search" id="paymentSearch" placeholder="Search received fund..." oninput="renderFundTables()">
+        <table>
+          <thead><tr><th>Fund</th><th>Student</th><th>Description</th><th>Amount</th><th>Payment Date</th><th>Method</th><th>Reference</th><th>Note</th></tr></thead>
+          <tbody id="paymentTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Fund Payment / Expense History</h2>
+        <input class="search" id="expenseSearch" placeholder="Search payment/expense..." oninput="renderFundTables()">
+        <table>
+          <thead><tr><th>Fund</th><th>Date</th><th>Payee</th><th>Description</th><th>Amount</th><th>Method</th><th>Reference</th><th>Note</th></tr></thead>
+          <tbody id="expenseTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="dataTab" class="tab">
+      <div class="card">
+        <h2>Student Account Requests - Data Manager Review</h2>
+        <p class="subtitle">Review submitted student account requests and assign a Student ID. After review, Master Account can approve.</p>
+        <div class="form-grid">
+          <div><label>Request ID</label><input id="reviewRequestId" readonly placeholder="Load a request first"></div>
+          <div><label>Assigned Student ID</label><input id="reviewAssignedStudentId" placeholder="Example: ST-001"></div>
+          <div><label>Review Note</label><input id="reviewNote" placeholder="Checked and recommended for approval"></div>
+        </div>
+        <div class="btn-row"><button onclick="markRequestReviewed()">Mark as Reviewed</button><button class="dark" onclick="clearReviewForm()">Clear Review Form</button></div>
+        <br>
+        <table>
+          <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Branch</th><th>Status</th><th>Assigned ID</th><th>Action</th></tr></thead>
+          <tbody id="reviewRequestTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Add / Edit Student Data</h2>
+        <input type="hidden" id="editingStudentId">
+        <div class="form-grid">
+          <div><label>Student ID</label><input id="studentId" placeholder="Example: ST-001"></div>
+          <div><label>Full Name</label><input id="fullName" placeholder="Student full name"></div>
+          <div><label>Photo URL</label><input id="photoUrl" placeholder="Paste photo direct URL here"></div>
+          <div><label>Designation</label><input id="designation" placeholder="Article Student"></div>
+          <div><label>Registration No.</label><input id="registrationNo" placeholder="ICAB registration no."></div>
+          <div><label>Joining Date</label><input type="date" id="joiningDate"></div>
+          <div><label>CA Level</label><input id="caLevel" placeholder="Certificate Level / Professional Level"></div>
+          <div><label>CA Result Summary</label><input id="caResults" placeholder="Running / Passed / Pending"></div>
+          <div><label>Branch</label><input id="branch" placeholder="Panthapath / Bangla Motor"></div>
+          <div><label>Status</label><select id="studentStatus"><option>Active</option><option>Inactive</option></select></div>
+          <div><label>Student Personal Email / Login Email</label><input type="email" id="studentLoginEmail" placeholder="student@email.com"></div>
+          <div><label>Temporary Login Password</label><input id="studentTempPassword" placeholder="Example: st123456"></div>
+          <div><label>Private Phone</label><input id="privatePhone"></div>
+          <div><label>Private Email</label><input id="privateEmail"></div>
+          <div><label>Birth Date</label><input type="date" id="birthDate"></div>
+          <div><label>Private Address</label><input id="privateAddress"></div>
+        </div>
+        <br>
+        <label>Private Notes</label><textarea id="privateNotes"></textarea>
+        <div class="btn-row"><button onclick="saveStudent()">Save Student</button><button class="dark" onclick="clearStudentForm()">Clear</button></div>
+      </div>
+
+      <div class="card">
+        <h2>Student Data List</h2>
+        <input class="search" id="dataSearch" placeholder="Search student data..." oninput="renderDataManagerList()">
+        <table>
+          <thead><tr><th>ID</th><th>Name</th><th>Designation</th><th>Reg. No.</th><th>CA Result</th><th>Branch</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="dataManagerTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="masterTab" class="tab">
+      <div class="notice">Master account can access student profile, fund, vouchers, login credentials, user roles and opening balance.</div>
+
+      <div class="card">
+        <h2>Student Account Approval - Master</h2>
+        <p class="subtitle">Approve only after Data Manager review. Approval will create the student profile, private details and login credential record.</p>
+        <table>
+          <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Assigned ID</th><th>Review Note</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="masterRequestTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Student Login Credentials</h2>
+        <div class="credential-note">To make login work, create the Auth user in Supabase Authentication using the same email and password, then link profile role as student.</div>
+        <table>
+          <thead><tr><th>Student ID</th><th>Student Name</th><th>Login Email</th><th>Temporary Password</th><th>Role</th><th>Status</th><th>Created At</th></tr></thead>
+          <tbody id="credentialTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Login User / Role List</h2>
+        <table>
+          <thead><tr><th>User Email</th><th>Name</th><th>Student ID</th><th>Role</th><th>Status</th></tr></thead>
+          <tbody id="profileUserTable"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="printArea" class="hidden"></div>
+
+  <script>
+    const SUPABASE_URL = "https://nvmdbafhosxgdnqdvcza.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_2sfkznJBSAwmSQ2kpVuZvA_coJ1Msfu";
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+    let currentProfile = null;
+    let students = [];
+    let studentDetails = [];
+    let receivables = [];
+    let payments = [];
+    let fundPayments = [];
+    let userProfiles = [];
+    let studentCredentials = [];
+    let openingBalances = [];
+    let studentAccountRequests = [];
+    let funds = [];
+
+    document.addEventListener("DOMContentLoaded", init);
+
+    async function init() {
+      setToday();
+      await loadPublicStudents();
+      const result = await db.auth.getSession();
+      const session = result.data.session;
+      if (session) await handleLoggedInUser(session.user);
+      else renderLoggedOut();
+    }
+
+    function setToday() {
+      const today = new Date().toISOString().slice(0, 10);
+      const month = new Date().toISOString().slice(0, 7);
+      ["receivableDueDate", "paymentDate", "expenseDate", "voucherDate"].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = today;
+      });
+      const ms = document.getElementById("monthlySheetMonth"); if (ms) ms.value = month;
+    }
+
+    async function refreshAll() {
+      await loadPublicStudents();
+      if (currentUser) await loadRoleData();
+      showMessage("Data refreshed.", "success");
+    }
+
+    async function login() {
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+      if (!email || !password) { showMessage("Login ID / Email and password are required.", "error"); return; }
+      const result = await db.auth.signInWithPassword({ email, password });
+      if (result.error) { showMessage(result.error.message, "error"); return; }
+      document.getElementById("loginEmail").value = "";
+      document.getElementById("loginPassword").value = "";
+      await handleLoggedInUser(result.data.user);
+      showMessage("Login successful.", "success");
+    }
+
+    async function logout() {
+      await db.auth.signOut();
+      currentUser = null;
+      currentProfile = null;
+      renderLoggedOut();
+      showMessage("Logged out successfully.", "success");
+    }
+
+    async function handleLoggedInUser(user) {
+      currentUser = user;
+      const result = await db.from("profiles").select("*").eq("id", user.id).single();
+      if (result.error || !result.data) {
+        showMessage("Login user found, but no role profile found. Please add this user in profiles table.", "error");
+        renderLoggedOut();
+        return;
+      }
+      currentProfile = result.data;
+      if (currentProfile.status && currentProfile.status !== "Active") {
+        showMessage("This account is inactive.", "error");
+        await logout();
+        return;
+      }
+      renderLoggedIn();
+      await loadRoleData();
+    }
+
+    function renderLoggedOut() {
+      document.getElementById("loginStatus").textContent = "Not logged in";
+      document.getElementById("loginForm").classList.remove("hidden");
+      document.getElementById("logoutBtn").classList.add("hidden");
+      hideRoleTabs();
+      openTabById("publicTab");
+    }
+
+    function renderLoggedIn() {
+      const roleText = currentProfile.role || "unknown";
+      document.getElementById("loginStatus").textContent = roleText + " | " + currentUser.email;
+      document.getElementById("loginForm").classList.add("hidden");
+      document.getElementById("logoutBtn").classList.remove("hidden");
+      hideRoleTabs();
+      if (roleText === "student") { document.getElementById("studentTabBtn").classList.remove("hidden"); openTabById("studentTab"); }
+      if (roleText === "fund_manager") { document.getElementById("fundTabBtn").classList.remove("hidden"); openTabById("fundTab"); }
+      if (roleText === "data_manager") { document.getElementById("dataTabBtn").classList.remove("hidden"); openTabById("dataTab"); }
+      if (roleText === "master") {
+        document.getElementById("fundTabBtn").classList.remove("hidden");
+        document.getElementById("dataTabBtn").classList.remove("hidden");
+        document.getElementById("masterTabBtn").classList.remove("hidden");
+        openTabById("masterTab");
+      }
+    }
+
+    function hideRoleTabs() {
+      ["studentTabBtn", "fundTabBtn", "dataTabBtn", "masterTabBtn"].forEach(id => document.getElementById(id).classList.add("hidden"));
+    }
+
+    async function loadPublicStudents() {
+      const result = await db.from("students").select("*").order("full_name", { ascending: true });
+      if (result.error) { showMessage("Public student load error: " + result.error.message, "error"); return; }
+      students = result.data || [];
+      document.getElementById("heroNumber").textContent = students.length;
+      renderBirthdayNotice();
+      renderPublicStudents();
+    }
+
+    function renderBirthdayNotice() {
+      const box = document.getElementById("birthdayBox");
+      const today = new Date();
+      const month = today.getMonth() + 1;
+      const day = today.getDate();
+      const birthdayStudents = students.filter(s => Number(s.birth_month) === month && Number(s.birth_day) === day);
+      if (birthdayStudents.length === 0) { box.style.display = "none"; box.innerHTML = ""; return; }
+      box.innerHTML = "Today's Birthday: " + birthdayStudents.map(s => escapeHtml(s.full_name)).join(", ");
+      box.style.display = "block";
+    }
+
+    function renderPublicStudents() {
+      const box = document.getElementById("publicStudentList");
+      const search = document.getElementById("publicSearch").value.toLowerCase();
+      const rows = students.filter(s => safe(s.full_name).toLowerCase().includes(search) || safe(s.student_id).toLowerCase().includes(search) || safe(s.designation).toLowerCase().includes(search) || safe(s.registration_no).toLowerCase().includes(search) || safe(s.branch).toLowerCase().includes(search) || safe(s.ca_results).toLowerCase().includes(search));
+      if (rows.length === 0) { box.innerHTML = "<div class='notice'>No student found.</div>"; return; }
+      box.innerHTML = rows.map(s => `
+        <div class="student-list-item">
+          <div class="public-photo">${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}</div>
+          <div>
+            <h3 class="student-name" onclick="openPublicProfile('${escapeAttribute(s.student_id)}')">${escapeHtml(s.full_name)}</h3>
+            <div class="short-meta"><span>ID: ${escapeHtml(s.student_id)}</span><span>${escapeHtml(s.designation)}</span><span>${escapeHtml(s.branch)}</span><span>${escapeHtml(s.status)}</span></div>
+          </div>
+        </div>`).join("");
+    }
+
+    function openPublicProfile(studentId) {
+      const box = document.getElementById("publicStudentList");
+      const s = students.find(item => item.student_id === studentId);
+      if (!s) { box.innerHTML = "<div class='notice'>Student profile not found.</div>"; return; }
+      box.innerHTML = `
+        <div class="btn-row"><button class="light" onclick="renderPublicStudents()">Back to Student List</button></div><br>
+        <div class="full-profile-card">
+          <div class="full-profile-header">
+            <div class="full-profile-photo">${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}</div>
+            <div><h2 class="full-profile-name">${escapeHtml(s.full_name)}</h2><div class="full-profile-subtitle">CA Student Profile | M A Fazal & Co., Chartered Accountants</div></div>
+          </div>
+          <div class="full-profile-details">
+            <div class="info"><span>Student ID</span><strong>${escapeHtml(s.student_id)}</strong></div>
+            <div class="info"><span>Full Name</span><strong>${escapeHtml(s.full_name)}</strong></div>
+            <div class="info"><span>Designation</span><strong>${escapeHtml(s.designation)}</strong></div>
+            <div class="info"><span>Registration No.</span><strong>${escapeHtml(s.registration_no)}</strong></div>
+            <div class="info"><span>Joining Date</span><strong>${escapeHtml(s.joining_date)}</strong></div>
+            <div class="info"><span>CA Level</span><strong>${escapeHtml(s.ca_level)}</strong></div>
+            <div class="info"><span>CA Result</span><strong>${escapeHtml(s.ca_results)}</strong></div>
+            <div class="info"><span>Branch</span><strong>${escapeHtml(s.branch)}</strong></div>
+            <div class="info"><span>Status</span><strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</strong></div>
+          </div>
+        </div>`;
+    }
+
+    async function loadRoleData() {
+      const role = currentProfile.role;
+      if (role === "student") await loadStudentDashboard();
+      if (role === "fund_manager" || role === "master") await loadFundData();
+      if (role === "data_manager" || role === "master") await loadStudentDataManager();
+      if (role === "master") await loadMasterData();
+    }
+
+    async function loadFunds() {
+      const result = await db.from("student_funds").select("*").order("fund_name", { ascending: true });
+      if (result.error) { funds = [{ fund_name: "General Fund" }]; return; }
+      funds = result.data && result.data.length ? result.data : [{ fund_name: "General Fund" }];
+    }
+
+    function fillFundSelect(id) {
+      const el = document.getElementById(id); if (!el) return;
+      el.innerHTML = funds.map(f => `<option value="${escapeAttribute(f.fund_name)}">${escapeHtml(f.fund_name)}</option>`).join("");
+    }
+
+    function fillAllFundSelects() {
+      ["openingFund", "receivableFund", "paymentFund", "expenseFund", "voucherFund", "monthlySheetFund"].forEach(fillFundSelect);
+    }
+
+    async function saveFundName() {
+      if (!currentProfile || currentProfile.role !== "master") { showMessage("Only Master Account can create fund name.", "error"); return; }
+      const fundName = document.getElementById("newFundName").value.trim();
+      const description = document.getElementById("newFundDescription").value.trim();
+      if (!fundName) { showMessage("Fund name is required.", "error"); return; }
+      const result = await db.from("student_funds").upsert({ fund_name: fundName, description, status: "Active" }, { onConflict: "fund_name" });
+      if (result.error) { showMessage(result.error.message, "error"); return; }
+      document.getElementById("newFundName").value = "";
+      document.getElementById("newFundDescription").value = "";
+      await loadFundData();
+      showMessage("Fund name saved successfully.", "success");
+    }
+
+    async function loadOpeningBalances() {
+      const result = await db.from("student_opening_balances").select("*").order("student_name", { ascending: true });
+      openingBalances = result.error ? [] : (result.data || []);
+    }
+
+    function getOpeningBalance(studentId, fundName) {
+      const row = openingBalances.find(o => o.student_id === studentId && o.fund_name === fundName && o.status === "Active");
+      return row ? Number(row.opening_balance || 0) : 0;
+    }
+
+    async function loadStudentDashboard() {
+      const sid = currentProfile.student_id;
+      if (!sid) { document.getElementById("studentDashboard").innerHTML = "<div class='notice'>No student ID linked with this login account.</div>"; return; }
+      await loadOpeningBalances();
+      const publicResult = await db.from("students").select("*").eq("student_id", sid).single();
+      const privateResult = await db.from("student_details").select("*").eq("student_id", sid).maybeSingle();
+      const receivableResult = await db.from("receivables").select("*").eq("student_id", sid).order("created_at", { ascending: false });
+      const paymentResult = await db.from("payments").select("*").eq("student_id", sid).order("created_at", { ascending: false });
+      const pub = publicResult.data || {};
+      const priv = privateResult.data || {};
+      const recs = receivableResult.data || [];
+      const pays = paymentResult.data || [];
+      const opening = openingBalances.filter(o => o.student_id === sid && o.status === "Active").reduce((sum, o) => sum + Number(o.opening_balance || 0), 0);
+      const totalPaid = pays.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const unpaidReceivable = recs.filter(r => r.status !== "Paid").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const due = opening + unpaidReceivable;
+      const recRows = recs.length ? recs.map(r => `<tr><td>${escapeHtml(r.fund_name)}</td><td>${escapeHtml(r.description)}</td><td>${money(r.amount)}</td><td>${escapeHtml(r.due_date)}</td><td><span class="${r.status === "Paid" ? "paid" : "unpaid"}">${escapeHtml(r.status)}</span></td><td>${escapeHtml(r.paid_at)}</td></tr>`).join("") : "<tr><td colspan='6'>No receivable found.</td></tr>";
+      const payRows = pays.length ? pays.map(p => `<tr><td>${escapeHtml(p.fund_name)}</td><td>${escapeHtml(p.description)}</td><td>${money(p.amount)}</td><td>${escapeHtml(p.payment_date)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.note)}</td></tr>`).join("") : "<tr><td colspan='6'>No payment found.</td></tr>";
+      document.getElementById("studentDashboard").innerHTML = `
+        <div class="profile-grid">
+          <div class="card">
+            <div class="avatar">${pub.photo_url ? `<img src="${escapeHtml(pub.photo_url)}">` : escapeHtml(getInitials(pub.full_name))}</div>
+            <h2>${escapeHtml(pub.full_name)}</h2><p class="subtitle">${escapeHtml(pub.student_id)} | ${escapeHtml(pub.designation)}</p>
+            <div class="info"><span>Registration No.</span><strong>${escapeHtml(pub.registration_no)}</strong></div>
+            <div class="info"><span>Joining Date</span><strong>${escapeHtml(pub.joining_date)}</strong></div>
+            <div class="info"><span>CA Level</span><strong>${escapeHtml(pub.ca_level)}</strong></div>
+            <div class="info"><span>CA Result</span><strong>${escapeHtml(pub.ca_results)}</strong></div>
+            <div class="info"><span>Branch</span><strong>${escapeHtml(pub.branch)}</strong></div>
+            <div class="info"><span>Status</span><strong>${escapeHtml(pub.status)}</strong></div>
+            <h3>Private Details</h3>
+            <div class="info"><span>Phone</span><strong>${escapeHtml(priv.phone)}</strong></div>
+            <div class="info"><span>Email</span><strong>${escapeHtml(priv.email_private)}</strong></div>
+            <div class="info"><span>Birth Date</span><strong>${escapeHtml(priv.birth_date)}</strong></div>
+            <div class="info"><span>Address</span><strong>${escapeHtml(priv.address)}</strong></div>
+            <div class="info"><span>Notes</span><strong>${escapeHtml(priv.notes)}</strong></div>
+          </div>
+          <div>
+            <div class="cards">
+              <div class="card stat"><h3>Opening Balance</h3><div class="value">${money(opening)}</div></div>
+              <div class="card stat"><h3>Total Paid</h3><div class="value">${money(totalPaid)}</div></div>
+              <div class="card stat"><h3>Due Balance</h3><div class="value">${money(due)}</div></div>
+              <div class="card stat"><h3>Total Payments</h3><div class="value">${pays.length}</div></div>
+            </div>
+            <div class="card"><h2>My Receivables</h2><table><thead><tr><th>Fund</th><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Paid At</th></tr></thead><tbody>${recRows}</tbody></table></div>
+            <div class="card"><h2>My Payments</h2><table><thead><tr><th>Fund</th><th>Description</th><th>Amount</th><th>Payment Date</th><th>Method</th><th>Note</th></tr></thead><tbody>${payRows}</tbody></table></div>
+          </div>
+        </div>`;
+    }
+
+    async function loadFundData() {
+      await loadFunds();
+      await loadOpeningBalances();
+      const recResult = await db.from("receivables").select("*").order("created_at", { ascending: false });
+      const payResult = await db.from("payments").select("*").order("created_at", { ascending: false });
+      const expenseResult = await db.from("fund_payments").select("*").order("payment_date", { ascending: false });
+      if (recResult.error) { showMessage(recResult.error.message, "error"); return; }
+      if (payResult.error) { showMessage(payResult.error.message, "error"); return; }
+      receivables = recResult.data || [];
+      payments = payResult.data || [];
+      fundPayments = expenseResult.error ? [] : (expenseResult.data || []);
+      document.getElementById("openingBalanceManager").classList.toggle("hidden", currentProfile.role !== "master");
+      document.getElementById("fundNameManager").classList.toggle("hidden", currentProfile.role !== "master");
+      fillAllFundSelects();
+      renderStudentDropdowns();
+      renderOpeningBalanceTable();
+      renderFundCards();
+      renderFundTables();
+    }
+
+    function renderStudentDropdowns() {
+      const active = students.filter(s => s.status === "Active");
+      const recSelect = document.getElementById("receivableStudent");
+      const paySelect = document.getElementById("paymentStudent");
+      const recLinkSelect = document.getElementById("paymentReceivable");
+      const openingSelect = document.getElementById("openingStudent");
+      recSelect.innerHTML = `<option value="ALL">All Active Students</option>`;
+      paySelect.innerHTML = "";
+      openingSelect.innerHTML = "";
+      recLinkSelect.innerHTML = `<option value="">No linked receivable</option>`;
+      active.forEach(s => {
+        const text = `${s.student_id} - ${s.full_name}`;
+        recSelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
+        paySelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
+        openingSelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
+      });
+      receivables.filter(r => r.status !== "Paid").forEach(r => {
+        recLinkSelect.innerHTML += `<option value="${escapeAttribute(r.id)}">${escapeHtml(r.fund_name)} | ${escapeHtml(r.student_id)} - ${escapeHtml(r.description)} - ${money(r.amount)}</option>`;
+      });
+    }
+
+    function renderOpeningBalanceTable() {
+      const tbody = document.getElementById("openingBalanceTable");
+      if (openingBalances.length === 0) { tbody.innerHTML = "<tr><td colspan='6'>No opening balance found.</td></tr>"; return; }
+      tbody.innerHTML = openingBalances.map(o => {
+        const action = currentProfile.role === "master" ? `<button class="warning" onclick="editOpeningBalance('${escapeAttribute(o.student_id)}','${escapeAttribute(o.fund_name)}')">Edit</button>` : "View only";
+        return `<tr><td>${escapeHtml(o.fund_name)}</td><td>${escapeHtml(o.student_id)} - ${escapeHtml(o.student_name)}</td><td>${money(o.opening_balance)}</td><td>${escapeHtml(o.remarks)}</td><td>${escapeHtml(o.status)}</td><td>${action}</td></tr>`;
+      }).join("");
+    }
+
+    function editOpeningBalance(studentId, fundName) {
+      const row = openingBalances.find(o => o.student_id === studentId && o.fund_name === fundName);
+      if (!row) return;
+      document.getElementById("openingFund").value = row.fund_name;
+      document.getElementById("openingStudent").value = row.student_id;
+      document.getElementById("openingAmount").value = row.opening_balance || 0;
+      document.getElementById("openingRemarks").value = row.remarks || "";
+      document.getElementById("openingStatus").value = row.status || "Active";
+      showMessage("Opening balance loaded for editing.", "success");
+    }
+
+    async function saveOpeningBalance() {
+      if (!currentProfile || currentProfile.role !== "master") { showMessage("Only Master Account can save opening balance.", "error"); return; }
+      const fundName = document.getElementById("openingFund").value;
+      const studentId = document.getElementById("openingStudent").value;
+      const amount = Number(document.getElementById("openingAmount").value || 0);
+      const remarks = document.getElementById("openingRemarks").value.trim();
+      const status = document.getElementById("openingStatus").value;
+      const student = students.find(s => s.student_id === studentId);
+      if (!student) { showMessage("Please select student.", "error"); return; }
+      const row = { student_id: student.student_id, student_name: student.full_name, fund_name: fundName, opening_balance: amount, remarks, status, updated_by: currentUser.id, updated_at: new Date().toISOString() };
+      const result = await db.from("student_opening_balances").upsert(row, { onConflict: "student_id,fund_name" });
+      if (result.error) { showMessage(result.error.message, "error"); return; }
+      clearOpeningBalanceForm();
+      await loadFundData();
+      showMessage("Opening balance saved successfully.", "success");
+    }
+
+    function clearOpeningBalanceForm() {
+      document.getElementById("openingAmount").value = "";
+      document.getElementById("openingRemarks").value = "";
+      document.getElementById("openingStatus").value = "Active";
+    }
+
+    function renderFundCards() {
+      const totalOpening = openingBalances.filter(o => o.status === "Active").reduce((sum, o) => sum + Number(o.opening_balance || 0), 0);
+      const unpaidReceivable = receivables.filter(r => r.status !== "Paid").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const totalReceived = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const totalExpense = fundPayments.filter(e => e.status === "Active").reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      document.getElementById("totalOpeningBalance").textContent = money(totalOpening);
+      document.getElementById("totalDueBalance").textContent = money(totalOpening + unpaidReceivable);
+      document.getElementById("totalReceivedBalance").textContent = money(totalReceived);
+      document.getElementById("totalPaymentBalance").textContent = money(totalExpense);
+    }
+
+    function renderFundTables() {
+      const recSearch = document.getElementById("receivableSearch").value.toLowerCase();
+      const paySearch = document.getElementById("paymentSearch").value.toLowerCase();
+      const expenseSearch = document.getElementById("expenseSearch").value.toLowerCase();
+      const recRows = receivables.filter(r => safe(r.fund_name).toLowerCase().includes(recSearch) || safe(r.student_id).toLowerCase().includes(recSearch) || safe(r.student_name).toLowerCase().includes(recSearch) || safe(r.description).toLowerCase().includes(recSearch) || safe(r.status).toLowerCase().includes(recSearch));
+      document.getElementById("receivableTable").innerHTML = recRows.length ? recRows.map(r => `<tr><td>${escapeHtml(r.fund_name)}</td><td>${escapeHtml(r.student_id)} - ${escapeHtml(r.student_name)}</td><td>${escapeHtml(r.description)}</td><td>${money(r.amount)}</td><td>${escapeHtml(r.due_date)}</td><td><span class="${r.status === "Paid" ? "paid" : "unpaid"}">${escapeHtml(r.status)}</span></td><td>${escapeHtml(r.paid_at)}</td></tr>`).join("") : "<tr><td colspan='7'>No receivable found.</td></tr>";
+      const payRows = payments.filter(p => safe(p.fund_name).toLowerCase().includes(paySearch) || safe(p.student_id).toLowerCase().includes(paySearch) || safe(p.student_name).toLowerCase().includes(paySearch) || safe(p.description).toLowerCase().includes(paySearch) || safe(p.method).toLowerCase().includes(paySearch));
+      document.getElementById("paymentTable").innerHTML = payRows.length ? payRows.map(p => `<tr><td>${escapeHtml(p.fund_name)}</td><td>${escapeHtml(p.student_id)} - ${escapeHtml(p.student_name)}</td><td>${escapeHtml(p.description)}</td><td>${money(p.amount)}</td><td>${escapeHtml(p.payment_date)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.reference_no)}</td><td>${escapeHtml(p.note)}</td></tr>`).join("") : "<tr><td colspan='8'>No received fund found.</td></tr>";
+      const expRows = fundPayments.filter(e => safe(e.fund_name).toLowerCase().includes(expenseSearch) || safe(e.payee_name).toLowerCase().includes(expenseSearch) || safe(e.description).toLowerCase().includes(expenseSearch) || safe(e.method).toLowerCase().includes(expenseSearch));
+      document.getElementById("expenseTable").innerHTML = expRows.length ? expRows.map(e => `<tr><td>${escapeHtml(e.fund_name)}</td><td>${escapeHtml(e.payment_date)}</td><td>${escapeHtml(e.payee_name)}</td><td>${escapeHtml(e.description)}</td><td>${money(e.amount)}</td><td>${escapeHtml(e.method)}</td><td>${escapeHtml(e.reference_no)}</td><td>${escapeHtml(e.note)}</td></tr>`).join("") : "<tr><td colspan='8'>No fund payment found.</td></tr>";
+    }
+
+    async function addReceivable() {
+      const fundName = document.getElementById("receivableFund").value;
+      const sid = document.getElementById("receivableStudent").value;
+      const amount = Number(document.getElementById("receivableAmount").value || 0);
+      const description = document.getElementById("receivableDescription").value.trim();
+      const dueDate = document.getElementById("receivableDueDate").value;
+      if (!sid || amount <= 0 || !description) { showMessage("Fund, student, amount and description are required.", "error"); return; }
+      let rows = [];
+      if (sid === "ALL") {
+        rows = students.filter(s => s.status === "Active").map(s => ({ fund_name: fundName, student_id: s.student_id, student_name: s.full_name, description, amount, due_date: dueDate, status: "Unpaid" }));
+      } else {
+        const student = students.find(s => s.student_id === sid);
+        rows = [{ fund_name: fundName, student_id: student.student_id, student_name: student.full_name, description, amount, due_date: dueDate, status: "Unpaid" }];
+      }
+      const result = await db.from("receivables").insert(rows);
+      if (result.error) { showMessage(result.error.message, "error"); return; }
+      document.getElementById("receivableAmount").value = "";
+      document.getElementById("receivableDescription").value = "";
+      await loadFundData();
+      showMessage("Receivable added successfully.", "success");
+    }
+
+    async function addPayment() {
+      const fundName = document.getElementById("paymentFund").value;
+      const sid = document.getElementById("paymentStudent").value;
+      const linkedReceivableId = document.getElementById("paymentReceivable").value;
+      let amount = Number(document.getElementById("paymentAmount").value || 0);
+      const paymentDate = document.getElementById("paymentDate").value;
+      const method = document.getElementById("paymentMethod").value;
+      const referenceNo = document.getElementById("paymentReference").value.trim();
+      const note = document.getElementById("paymentNote").value.trim();
+      let description = "Direct Payment";
+      const student = students.find(s => s.student_id === sid);
+      if (!student) { showMessage("Please select a student.", "error"); return; }
+      if (linkedReceivableId) {
+        const rec = receivables.find(r => String(r.id) === String(linkedReceivableId));
+        if (rec) { description = rec.description; if (amount <= 0) amount = Number(rec.amount || 0); }
+      }
+      if (amount <= 0) { showMessage("Payment amount is required.", "error"); return; }
+      const payResult = await db.from("payments").insert([{ fund_name: fundName, student_id: student.student_id, student_name: student.full_name, receivable_id: linkedReceivableId || null, description, amount, payment_date: paymentDate, method, reference_no: referenceNo, note }]);
+      if (payResult.error) { showMessage(payResult.error.message, "error"); return; }
+      if (linkedReceivableId) {
+        const updateResult = await db.from("receivables").update({ status: "Paid", paid_at: paymentDate }).eq("id", linkedReceivableId);
+        if (updateResult.error) { showMessage(updateResult.error.message, "error"); return; }
+      }
+      document.getElementById("paymentAmount").value = "";
+      document.getElementById("paymentReference").value = "";
+      document.getElementById("paymentNote").value = "";
+      await loadFundData();
+      showMessage("Fund received successfully.", "success");
+    }
+
+    async function addFundPayment() {
+      const row = {
+        fund_name: document.getElementById("expenseFund").value,
+        payment_date: document.getElementById("expenseDate").value,
+        payee_name: document.getElementById("expensePayee").value.trim(),
+        description: document.getElementById("expenseDescription").value.trim(),
+        amount: Number(document.getElementById("expenseAmount").value || 0),
+        method: document.getElementById("expenseMethod").value,
+        reference_no: document.getElementById("expenseReference").value.trim(),
+        note: document.getElementById("expenseNote").value.trim(),
+        status: "Active"
+      };
+      if (!row.payee_name || !row.description || row.amount <= 0) { showMessage("Payee, description and amount are required.", "error"); return; }
+      const result = await db.from("fund_payments").insert([row]);
+      if (result.error) { showMessage(result.error.message, "error"); return; }
+      ["expensePayee", "expenseDescription", "expenseAmount", "expenseReference", "expenseNote"].forEach(id => document.getElementById(id).value = "");
+      await loadFundData();
+      showMessage("Fund payment added successfully.", "success");
+    }
+
+    function printDailyVoucher() {
+      const date = document.getElementById("voucherDate").value;
+      const fundName = document.getElementById("voucherFund").value;
+      const type = document.getElementById("voucherType").value;
+      const receivedRows = (type === "Payment") ? [] : payments.filter(p => p.payment_date === date && p.fund_name === fundName);
+      const paymentRows = (type === "Received") ? [] : fundPayments.filter(e => e.payment_date === date && e.fund_name === fundName && e.status === "Active");
+      if (receivedRows.length === 0 && paymentRows.length === 0) { showMessage("No transaction found for selected voucher.", "error"); return; }
+      const totalReceived = receivedRows.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const totalPayment = paymentRows.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      const voucherNo = "SFV-" + compactDate(date) + "-" + shortFund(fundName) + "-" + type.substring(0, 1).toUpperCase();
+      let serial = 1;
+      const receiptHtml = receivedRows.map(p => `<tr><td>${serial++}</td><td>Received</td><td>${escapeHtml(p.student_id)} - ${escapeHtml(p.student_name)}</td><td>${escapeHtml(p.description)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.reference_no)}</td><td style="text-align:right;">${money(p.amount)}</td><td style="text-align:right;">-</td></tr>`).join("");
+      const paymentHtml = paymentRows.map(e => `<tr><td>${serial++}</td><td>Payment</td><td>${escapeHtml(e.payee_name)}</td><td>${escapeHtml(e.description)}</td><td>${escapeHtml(e.method)}</td><td>${escapeHtml(e.reference_no)}</td><td style="text-align:right;">-</td><td style="text-align:right;">${money(e.amount)}</td></tr>`).join("");
+      const html = printHeader("Student Fund Voucher") + `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px;">
+          <div><strong>Voucher No:</strong> ${escapeHtml(voucherNo)}</div><div><strong>Date:</strong> ${escapeHtml(date)}</div>
+          <div><strong>Fund Name:</strong> ${escapeHtml(fundName)}</div><div><strong>Voucher Type:</strong> ${escapeHtml(type)}</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr><th>SL</th><th>Type</th><th>Name</th><th>Description</th><th>Method</th><th>Reference</th><th>Received</th><th>Payment</th></tr></thead>
+          <tbody>${receiptHtml}${paymentHtml}</tbody>
+          <tfoot><tr><th colspan="6" style="text-align:right;">Total</th><th style="text-align:right;">${money(totalReceived)}</th><th style="text-align:right;">${money(totalPayment)}</th></tr></tfoot>
+        </table>
+        ${signatureBlock()}`;
+      printHtml(html);
+    }
+
+    function printMonthlySheet() {
+      const monthValue = document.getElementById("monthlySheetMonth").value;
+      const fundName = document.getElementById("monthlySheetFund").value;
+      if (!monthValue) { showMessage("Please select month.", "error"); return; }
+      const start = monthValue + "-01";
+      const end = monthEnd(monthValue);
+      let sl = 1;
+      const rows = students.filter(s => s.status === "Active").map(s => {
+        const opening = getOpeningBalance(s.student_id, fundName);
+        const monthlyReceivable = receivables.filter(r => r.student_id === s.student_id && r.fund_name === fundName && r.due_date >= start && r.due_date <= end).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        const monthlyPaid = payments.filter(p => p.student_id === s.student_id && p.fund_name === fundName && p.payment_date >= start && p.payment_date <= end).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+        const due = opening + monthlyReceivable - monthlyPaid;
+        return `<tr><td>${sl++}</td><td>${escapeHtml(s.student_id)}</td><td>${escapeHtml(s.full_name)}</td><td>${escapeHtml(s.designation)}</td><td style="text-align:right;">${money(opening)}</td><td style="text-align:right;">${money(monthlyReceivable)}</td><td style="text-align:right;">${money(monthlyPaid)}</td><td style="text-align:right;">${money(due)}</td><td style="height:34px;"></td></tr>`;
+      }).join("");
+      const html = printHeader("Monthly Student Fund Payment Sheet") + `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px;">
+          <div><strong>Month:</strong> ${escapeHtml(monthValue)}</div><div><strong>Fund Name:</strong> ${escapeHtml(fundName)}</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead><tr><th>SL</th><th>Student ID</th><th>Name</th><th>Designation</th><th>Opening</th><th>Monthly Due</th><th>Paid</th><th>Balance</th><th>Signature</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${signatureBlock()}`;
+      printHtml(html);
+    }
+
+    function printHeader(title) {
+      return `<div style="font-family:Arial,sans-serif;color:#111;margin:20px;">
+        <div style="text-align:center;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:14px;">
+          <h2 style="margin:0;">M A Fazal & Co., Chartered Accountants</h2>
+          <h3 style="margin:6px 0 0;">${escapeHtml(title)}</h3>
+        </div>`;
+    }
+
+    function signatureBlock() {
+      return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px;margin-top:55px;font-size:12px;text-align:center;">
+        <div style="border-top:1px solid #111;padding-top:6px;">Prepared By</div>
+        <div style="border-top:1px solid #111;padding-top:6px;">Checked By</div>
+        <div style="border-top:1px solid #111;padding-top:6px;">Approved By</div>
+      </div></div>`;
+    }
+
+    function printHtml(html) {
+      const printArea = document.getElementById("printArea");
+      printArea.innerHTML = html;
+      printArea.classList.remove("hidden");
+      setTimeout(() => {
+        window.print();
+        printArea.classList.add("hidden");
+      }, 200);
+    }
 
 
-drop policy if exists "master can delete student login credentials" on public.student_login_credentials;
-create policy "master can delete student login credentials"
-on public.student_login_credentials
-for delete
-to authenticated
-using (
-  exists (
-    select 1
-    from public.profiles p
-    where p.id = auth.uid()
-    and p.role = 'master'
-  )
-);
 
+    function toggleStudentAccountRequestPanel() {
+      const panel = document.getElementById("studentAccountRequestPanel");
+      const btn = document.getElementById("studentAccountRequestToggleBtn");
 
-drop policy if exists "master can delete opening balances" on public.student_opening_balances;
-create policy "master can delete opening balances"
-on public.student_opening_balances
-for delete
-to authenticated
-using (
-  exists (
-    select 1
-    from public.profiles p
-    where p.id = auth.uid()
-    and p.role = 'master'
-  )
-);
+      if (!panel || !btn) return;
+
+      if (panel.style.display === "none" || panel.style.display === "") {
+        panel.style.display = "block";
+        btn.textContent = "Hide Student Account Form";
+      } else {
+        panel.style.display = "none";
+        btn.textContent = "Open Student Account Form";
+      }
+    }
+
+    async function submitStudentAccountRequest() {
+      const fullName = document.getElementById("reqFullName").value.trim();
+      const email = document.getElementById("reqPersonalEmail").value.trim();
+      const password = document.getElementById("reqPassword").value.trim();
+
+      if (!fullName || !email || !password) {
+        showMessage("Full name, email and requested password are required.", "error");
+        return;
+      }
+
+      const row = {
+        full_name: fullName,
+        personal_email: email,
+        requested_password: password,
+        photo_url: document.getElementById("reqPhotoUrl").value.trim(),
+        designation: document.getElementById("reqDesignation").value.trim(),
+        registration_no: document.getElementById("reqRegistrationNo").value.trim(),
+        joining_date: document.getElementById("reqJoiningDate").value || null,
+        ca_level: document.getElementById("reqCaLevel").value.trim(),
+        ca_results: document.getElementById("reqCaResults").value.trim(),
+        branch: document.getElementById("reqBranch").value.trim(),
+        phone: document.getElementById("reqPhone").value.trim(),
+        birth_date: document.getElementById("reqBirthDate").value || null,
+        address: document.getElementById("reqAddress").value.trim(),
+        notes: document.getElementById("reqNotes").value.trim(),
+        status: "Submitted"
+      };
+
+      const result = await db.from("student_account_requests").insert([row]);
+
+      if (result.error) {
+        showMessage("Account request failed: " + result.error.message, "error");
+        return;
+      }
+
+      clearStudentAccountRequestForm();
+      const panel = document.getElementById("studentAccountRequestPanel");
+      const btn = document.getElementById("studentAccountRequestToggleBtn");
+      if (panel) panel.style.display = "none";
+      if (btn) btn.textContent = "Open Student Account Form";
+      showMessage("Account request submitted. Data Manager will review it, then Master Account will approve.", "success");
+    }
+
+    function clearStudentAccountRequestForm() {
+      ["reqFullName", "reqPersonalEmail", "reqPassword", "reqPhotoUrl", "reqDesignation", "reqRegistrationNo", "reqJoiningDate", "reqCaLevel", "reqCaResults", "reqBranch", "reqPhone", "reqBirthDate", "reqAddress", "reqNotes"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+    }
+
+    async function loadStudentAccountRequests() {
+      const result = await db
+        .from("student_account_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (result.error) {
+        studentAccountRequests = [];
+        return;
+      }
+
+      studentAccountRequests = result.data || [];
+    }
+
+    function renderReviewRequestTable() {
+      const tbody = document.getElementById("reviewRequestTable");
+      if (!tbody) return;
+
+      const rows = studentAccountRequests.filter(r => r.status !== "Approved");
+
+      tbody.innerHTML = rows.length ? rows.map(r => `
+        <tr>
+          <td>${escapeHtml(formatDate(r.created_at))}</td>
+          <td>${escapeHtml(r.full_name)}</td>
+          <td>${escapeHtml(r.personal_email)}</td>
+          <td>${escapeHtml(r.branch)}</td>
+          <td><strong>${escapeHtml(r.status)}</strong></td>
+          <td>${escapeHtml(r.assigned_student_id)}</td>
+          <td><button class="warning" onclick="loadRequestForReview('${escapeAttribute(r.id)}')">Load Review</button></td>
+        </tr>
+      `).join("") : "<tr><td colspan='7'>No pending account request found.</td></tr>";
+    }
+
+    function loadRequestForReview(requestId) {
+      const req = studentAccountRequests.find(r => String(r.id) === String(requestId));
+      if (!req) {
+        showMessage("Request not found.", "error");
+        return;
+      }
+
+      document.getElementById("reviewRequestId").value = req.id;
+      document.getElementById("reviewAssignedStudentId").value = req.assigned_student_id || "";
+      document.getElementById("reviewNote").value = req.review_note || "Checked and recommended for approval.";
+      showMessage("Request loaded for Data Manager review.", "success");
+    }
+
+    async function markRequestReviewed() {
+      if (!currentProfile || !["data_manager", "master"].includes(currentProfile.role)) {
+        showMessage("Only Data Manager or Master can review student account requests.", "error");
+        return;
+      }
+
+      const requestId = document.getElementById("reviewRequestId").value.trim();
+      const assignedStudentId = document.getElementById("reviewAssignedStudentId").value.trim();
+      const reviewNote = document.getElementById("reviewNote").value.trim();
+
+      if (!requestId) {
+        showMessage("Please load a request first.", "error");
+        return;
+      }
+
+      if (!assignedStudentId) {
+        showMessage("Assigned Student ID is required before review.", "error");
+        return;
+      }
+
+      const result = await db.from("student_account_requests").update({
+        assigned_student_id: assignedStudentId,
+        review_note: reviewNote,
+        status: "Reviewed",
+        reviewed_by: currentUser.id,
+        reviewed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq("id", requestId);
+
+      if (result.error) {
+        showMessage("Review failed: " + result.error.message, "error");
+        return;
+      }
+
+      clearReviewForm();
+      await loadStudentAccountRequests();
+      renderReviewRequestTable();
+      if (currentProfile.role === "master") renderMasterRequestTable();
+      showMessage("Request marked as reviewed. Master Account can now approve it.", "success");
+    }
+
+    function clearReviewForm() {
+      ["reviewRequestId", "reviewAssignedStudentId", "reviewNote"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+    }
+
+    function renderMasterRequestTable() {
+      const tbody = document.getElementById("masterRequestTable");
+      if (!tbody) return;
+
+      const rows = studentAccountRequests.filter(r => r.status === "Reviewed" || r.status === "Submitted" || r.status === "Rejected");
+
+      tbody.innerHTML = rows.length ? rows.map(r => {
+        const canApprove = r.status === "Reviewed" && r.assigned_student_id;
+        const action = canApprove
+          ? `<button class="success" onclick="approveStudentAccountRequest('${escapeAttribute(r.id)}')">Approve</button> <button class="danger" onclick="rejectStudentAccountRequest('${escapeAttribute(r.id)}')">Reject</button>`
+          : (r.status === "Submitted" ? "Waiting for Data Manager review" : "No action");
+
+        return `
+          <tr>
+            <td>${escapeHtml(formatDate(r.created_at))}</td>
+            <td>${escapeHtml(r.full_name)}</td>
+            <td>${escapeHtml(r.personal_email)}</td>
+            <td>${escapeHtml(r.assigned_student_id)}</td>
+            <td>${escapeHtml(r.review_note)}</td>
+            <td><strong>${escapeHtml(r.status)}</strong></td>
+            <td>${action}</td>
+          </tr>
+        `;
+      }).join("") : "<tr><td colspan='7'>No account request waiting for approval.</td></tr>";
+    }
+
+    async function approveStudentAccountRequest(requestId) {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can approve student account requests.", "error");
+        return;
+      }
+
+      const req = studentAccountRequests.find(r => String(r.id) === String(requestId));
+      if (!req) {
+        showMessage("Request not found.", "error");
+        return;
+      }
+
+      if (req.status !== "Reviewed") {
+        showMessage("Request must be reviewed by Data Manager before approval.", "error");
+        return;
+      }
+
+      if (!req.assigned_student_id) {
+        showMessage("Assigned Student ID is required before approval.", "error");
+        return;
+      }
+
+      if (!confirm("Approve this student account request?")) return;
+
+      let birthMonth = null, birthDay = null;
+      if (req.birth_date) {
+        const parts = String(req.birth_date).split("-");
+        birthMonth = Number(parts[1]);
+        birthDay = Number(parts[2]);
+      }
+
+      const publicRow = {
+        student_id: req.assigned_student_id,
+        full_name: req.full_name,
+        photo_url: req.photo_url || "",
+        designation: req.designation || "Article Student",
+        registration_no: req.registration_no || "",
+        joining_date: req.joining_date || null,
+        ca_level: req.ca_level || "",
+        ca_results: req.ca_results || "",
+        branch: req.branch || "",
+        status: "Active",
+        birth_month: birthMonth,
+        birth_day: birthDay
+      };
+
+      const privateRow = {
+        student_id: req.assigned_student_id,
+        phone: req.phone || "",
+        email_private: req.personal_email || "",
+        birth_date: req.birth_date || null,
+        address: req.address || "",
+        notes: req.notes || ""
+      };
+
+      const publicResult = await db.from("students").upsert(publicRow, { onConflict: "student_id" });
+      if (publicResult.error) {
+        showMessage("Student profile create failed: " + publicResult.error.message, "error");
+        return;
+      }
+
+      const privateResult = await db.from("student_details").upsert(privateRow, { onConflict: "student_id" });
+      if (privateResult.error) {
+        showMessage("Private details create failed: " + privateResult.error.message, "error");
+        return;
+      }
+
+      const credentialResult = await db.from("student_login_credentials").upsert({
+        student_id: req.assigned_student_id,
+        student_name: req.full_name,
+        login_email: req.personal_email,
+        temporary_password: req.requested_password,
+        role: "student",
+        status: "Active"
+      }, { onConflict: "student_id" });
+
+      if (credentialResult.error) {
+        showMessage("Credential save failed: " + credentialResult.error.message, "error");
+        return;
+      }
+
+      const updateResult = await db.from("student_account_requests").update({
+        status: "Approved",
+        approval_note: "Approved by Master Account",
+        approved_by: currentUser.id,
+        approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq("id", requestId);
+
+      if (updateResult.error) {
+        showMessage("Request approval update failed: " + updateResult.error.message, "error");
+        return;
+      }
+
+      await loadPublicStudents();
+      await loadStudentCredentials();
+      await loadStudentAccountRequests();
+      renderCredentialTable();
+      renderMasterRequestTable();
+      showMessage("Student account approved. Now create the same email/password as an Auth user in Supabase and link profile role as student.", "success");
+    }
+
+    async function rejectStudentAccountRequest(requestId) {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can reject requests.", "error");
+        return;
+      }
+
+      if (!confirm("Reject this student account request?")) return;
+
+      const note = prompt("Rejection note", "Rejected by Master Account") || "Rejected by Master Account";
+      const result = await db.from("student_account_requests").update({
+        status: "Rejected",
+        approval_note: note,
+        approved_by: currentUser.id,
+        approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq("id", requestId);
+
+      if (result.error) {
+        showMessage("Reject failed: " + result.error.message, "error");
+        return;
+      }
+
+      await loadStudentAccountRequests();
+      renderMasterRequestTable();
+      renderReviewRequestTable();
+      showMessage("Request rejected.", "success");
+    }
+
+    async function loadStudentDataManager() {
+      const detailsResult = await db.from("student_details").select("*");
+      studentDetails = detailsResult.data || [];
+      await loadStudentAccountRequests();
+      if (currentProfile && currentProfile.role === "master") await loadStudentCredentials();
+      renderDataManagerList();
+      renderReviewRequestTable();
+    }
+
+    async function loadStudentCredentials() {
+      const result = await db.from("student_login_credentials").select("*").order("created_at", { ascending: false });
+      studentCredentials = result.error ? [] : (result.data || []);
+    }
+
+    function renderDataManagerList() {
+      const tbody = document.getElementById("dataManagerTable");
+      const search = document.getElementById("dataSearch").value.toLowerCase();
+      const rows = students.filter(s => safe(s.student_id).toLowerCase().includes(search) || safe(s.full_name).toLowerCase().includes(search) || safe(s.designation).toLowerCase().includes(search) || safe(s.registration_no).toLowerCase().includes(search) || safe(s.ca_results).toLowerCase().includes(search) || safe(s.branch).toLowerCase().includes(search));
+      tbody.innerHTML = rows.length ? rows.map(s => {
+        const deleteButton = currentProfile && currentProfile.role === "master"
+          ? `<button class="dark" onclick="deleteStudent('${escapeAttribute(s.student_id)}')">Delete</button>`
+          : "";
+
+        return `<tr><td>${escapeHtml(s.student_id)}</td><td>${escapeHtml(s.full_name)}</td><td>${escapeHtml(s.designation)}</td><td>${escapeHtml(s.registration_no)}</td><td>${escapeHtml(s.ca_results)}</td><td>${escapeHtml(s.branch)}</td><td><span class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</span></td><td><button class="warning" onclick="editStudent('${escapeAttribute(s.student_id)}')">Edit</button><button class="danger" onclick="deactivateStudent('${escapeAttribute(s.student_id)}')">Deactivate</button>${deleteButton}</td></tr>`;
+      }).join("") : "<tr><td colspan='8'>No student found.</td></tr>";
+    }
+
+    function editStudent(studentId) {
+      const pub = students.find(s => s.student_id === studentId) || {};
+      const priv = studentDetails.find(d => d.student_id === studentId) || {};
+      const cred = studentCredentials.find(c => c.student_id === studentId) || {};
+      document.getElementById("editingStudentId").value = studentId;
+      document.getElementById("studentId").value = pub.student_id || "";
+      document.getElementById("studentId").readOnly = true;
+      document.getElementById("fullName").value = pub.full_name || "";
+      document.getElementById("photoUrl").value = pub.photo_url || "";
+      document.getElementById("designation").value = pub.designation || "";
+      document.getElementById("registrationNo").value = pub.registration_no || "";
+      document.getElementById("joiningDate").value = pub.joining_date || "";
+      document.getElementById("caLevel").value = pub.ca_level || "";
+      document.getElementById("caResults").value = pub.ca_results || "";
+      document.getElementById("branch").value = pub.branch || "";
+      document.getElementById("studentStatus").value = pub.status || "Active";
+      document.getElementById("studentLoginEmail").value = cred.login_email || "";
+      document.getElementById("studentTempPassword").value = cred.temporary_password || "";
+      document.getElementById("privatePhone").value = priv.phone || "";
+      document.getElementById("privateEmail").value = priv.email_private || "";
+      document.getElementById("birthDate").value = priv.birth_date || "";
+      document.getElementById("privateAddress").value = priv.address || "";
+      document.getElementById("privateNotes").value = priv.notes || "";
+      openTabById("dataTab");
+      showMessage("Student loaded for editing.", "success");
+    }
+
+    async function saveStudent() {
+      const sid = document.getElementById("studentId").value.trim();
+      if (!sid) { showMessage("Student ID is required.", "error"); return; }
+      const birthDateValue = document.getElementById("birthDate").value || null;
+      let birthMonth = null, birthDay = null;
+      if (birthDateValue) { const parts = birthDateValue.split("-"); birthMonth = Number(parts[1]); birthDay = Number(parts[2]); }
+      const publicRow = { student_id: sid, full_name: document.getElementById("fullName").value.trim(), photo_url: document.getElementById("photoUrl").value.trim(), designation: document.getElementById("designation").value.trim(), registration_no: document.getElementById("registrationNo").value.trim(), joining_date: document.getElementById("joiningDate").value || null, ca_level: document.getElementById("caLevel").value.trim(), ca_results: document.getElementById("caResults").value.trim(), branch: document.getElementById("branch").value.trim(), status: document.getElementById("studentStatus").value, birth_month: birthMonth, birth_day: birthDay };
+      const privateRow = { student_id: sid, phone: document.getElementById("privatePhone").value.trim(), email_private: document.getElementById("privateEmail").value.trim(), birth_date: birthDateValue, address: document.getElementById("privateAddress").value.trim(), notes: document.getElementById("privateNotes").value.trim() };
+      const loginEmail = document.getElementById("studentLoginEmail").value.trim();
+      const tempPassword = document.getElementById("studentTempPassword").value.trim();
+      if (!publicRow.full_name) { showMessage("Full name is required.", "error"); return; }
+      if ((loginEmail && !tempPassword) || (!loginEmail && tempPassword)) { showMessage("Both student login email and temporary password are required.", "error"); return; }
+      const publicResult = await db.from("students").upsert(publicRow, { onConflict: "student_id" });
+      if (publicResult.error) { showMessage(publicResult.error.message, "error"); return; }
+      const privateResult = await db.from("student_details").upsert(privateRow, { onConflict: "student_id" });
+      if (privateResult.error) { showMessage(privateResult.error.message, "error"); return; }
+      if (loginEmail && tempPassword) {
+        const credentialResult = await db.from("student_login_credentials").upsert({ student_id: sid, student_name: publicRow.full_name, login_email: loginEmail, temporary_password: tempPassword, role: "student", status: publicRow.status }, { onConflict: "student_id" });
+        if (credentialResult.error) { showMessage("Student saved, but credential save failed: " + credentialResult.error.message, "error"); return; }
+      }
+      clearStudentForm();
+      await loadPublicStudents();
+      await loadStudentDataManager();
+      if (currentProfile && currentProfile.role === "master") await loadMasterData();
+      showMessage("Student saved successfully.", "success");
+    }
+
+    async function deactivateStudent(studentId) {
+      if (!confirm("Deactivate this student?")) return;
+      const result = await db.from("students").update({ status: "Inactive" }).eq("student_id", studentId);
+      if (result.error) { showMessage(result.error.message, "error"); return; }
+      await db.from("student_login_credentials").update({ status: "Inactive" }).eq("student_id", studentId);
+      await db.from("student_opening_balances").update({ status: "Inactive" }).eq("student_id", studentId);
+      await loadPublicStudents();
+      await loadStudentDataManager();
+      if (currentProfile && currentProfile.role === "master") await loadMasterData();
+      showMessage("Student deactivated.", "success");
+    }
+
+    function clearStudentForm() {
+      ["editingStudentId", "studentId", "fullName", "photoUrl", "designation", "registrationNo", "joiningDate", "caLevel", "caResults", "branch", "studentLoginEmail", "studentTempPassword", "privatePhone", "privateEmail", "birthDate", "privateAddress", "privateNotes"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("studentId").readOnly = false;
+      document.getElementById("studentStatus").value = "Active";
+    }
+
+    async function loadMasterData() {
+      const profileResult = await db.from("profiles").select("*").order("full_name", { ascending: true });
+      if (profileResult.error) { showMessage(profileResult.error.message, "error"); return; }
+      userProfiles = profileResult.data || [];
+      await loadStudentCredentials();
+      await loadStudentAccountRequests();
+      renderMasterProfiles();
+      renderCredentialTable();
+      renderMasterRequestTable();
+    }
+
+    function renderCredentialTable() {
+      const tbody = document.getElementById("credentialTable");
+      tbody.innerHTML = studentCredentials.length ? studentCredentials.map(c => `<tr><td>${escapeHtml(c.student_id)}</td><td>${escapeHtml(c.student_name)}</td><td>${escapeHtml(c.login_email)}</td><td><strong>${escapeHtml(c.temporary_password)}</strong></td><td>${escapeHtml(c.role)}</td><td>${escapeHtml(c.status)}</td><td>${escapeHtml(formatDate(c.created_at))}</td></tr>`).join("") : "<tr><td colspan='7'>No student login credential found.</td></tr>";
+    }
+
+    function renderMasterProfiles() {
+      const tbody = document.getElementById("profileUserTable");
+      tbody.innerHTML = userProfiles.length ? userProfiles.map(p => `<tr><td>${escapeHtml(p.email)}</td><td>${escapeHtml(p.full_name)}</td><td>${escapeHtml(p.student_id)}</td><td>${escapeHtml(p.role)}</td><td>${escapeHtml(p.status)}</td></tr>`).join("") : "<tr><td colspan='5'>No user profile found.</td></tr>";
+    }
+
+    function openTab(tabId, btn) {
+      document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(button => button.classList.remove("active"));
+      document.getElementById(tabId).classList.add("active");
+      if (btn) btn.classList.add("active");
+    }
+
+    function openTabById(tabId) {
+      const btn = document.querySelector('.tab-btn[data-tab="' + tabId + '"]');
+      if (btn) openTab(tabId, btn);
+    }
+
+    function showMessage(text, type) {
+      const box = document.getElementById("messageBox");
+      if (!text) { box.style.display = "none"; return; }
+      box.textContent = text;
+      box.className = "message " + type;
+      box.style.display = "block";
+      setTimeout(() => { box.style.display = "none"; }, 4500);
+    }
+
+    function money(value) {
+      return Number(value || 0).toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function safe(value) { return value === null || value === undefined ? "" : String(value); }
+
+    function getInitials(name) {
+      if (!name) return "ST";
+      const parts = name.trim().split(/\s+/);
+      if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function formatDate(value) { if (!value) return ""; return new Date(value).toLocaleString("en-BD"); }
+    function compactDate(value) { return String(value || "").replaceAll("-", ""); }
+    function shortFund(value) { return String(value || "GF").split(/\s+/).map(w => w[0] || "").join("").toUpperCase().substring(0, 6); }
+    function monthEnd(monthValue) { const parts = monthValue.split("-"); const d = new Date(Number(parts[0]), Number(parts[1]), 0); return d.toISOString().slice(0, 10); }
+
+    function escapeHtml(value) {
+      if (value === null || value === undefined) return "";
+      return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+    }
+
+    function escapeAttribute(value) { return String(value || "").replaceAll("\\", "\\\\").replaceAll("'", "\\'"); }
+
+    async function deleteStudent(studentId) {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can delete a student.", "error");
+        return;
+      }
+
+      const student = students.find(function (s) {
+        return s.student_id === studentId;
+      });
+
+      const studentName = student ? student.full_name : studentId;
+
+      const firstConfirm = confirm(
+        "Are you sure you want to permanently delete this student?\n\n" +
+        "Student: " + studentName + "\n" +
+        "Student ID: " + studentId + "\n\n" +
+        "This will remove the student profile, private details, login credential record and opening balance."
+      );
+
+      if (!firstConfirm) return;
+
+      const secondConfirm = confirm(
+        "Final confirmation: Delete permanently?\n\nThis action cannot be undone."
+      );
+
+      if (!secondConfirm) return;
+
+      await db.from("student_login_credentials").delete().eq("student_id", studentId);
+      await db.from("student_opening_balances").delete().eq("student_id", studentId);
+      await db.from("student_details").delete().eq("student_id", studentId);
+
+      const result = await db
+        .from("students")
+        .delete()
+        .eq("student_id", studentId);
+
+      if (result.error) {
+        showMessage("Delete failed: " + result.error.message, "error");
+        return;
+      }
+
+      clearStudentForm();
+      await loadPublicStudents();
+      await loadStudentDataManager();
+
+      if (currentProfile && currentProfile.role === "master") {
+        await loadMasterData();
+      }
+
+      showMessage("Student deleted successfully.", "success");
+    }
+
+  </script>
+</body>
+</html>
