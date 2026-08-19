@@ -1920,13 +1920,19 @@
       if (titleBox) titleBox.textContent = title || "Add / Edit Student Data";
 
       modal.classList.remove("hidden");
+      modal.classList.add("show");
       document.body.classList.add("modal-open-body");
+      document.body.style.overflow = "hidden";
     }
 
     function closeStudentFormModal() {
       const modal = document.getElementById("studentFormModal");
-      if (modal) modal.classList.add("hidden");
+      if (modal) {
+        modal.classList.remove("show");
+        modal.classList.add("hidden");
+      }
       document.body.classList.remove("modal-open-body");
+      document.body.style.overflow = "";
     }
 
     function openAddStudentModal() {
@@ -1938,14 +1944,20 @@
       const modal = document.getElementById("reviewRequestModal");
       if (!modal) return;
       modal.classList.remove("hidden");
+      modal.classList.add("show");
       document.body.classList.add("modal-open-body");
+      document.body.style.overflow = "hidden";
     }
 
     function closeReviewRequestModal(clearForm = true) {
       const modal = document.getElementById("reviewRequestModal");
       if (clearForm) clearReviewForm();
-      if (modal) modal.classList.add("hidden");
+      if (modal) {
+        modal.classList.remove("show");
+        modal.classList.add("hidden");
+      }
       document.body.classList.remove("modal-open-body");
+      document.body.style.overflow = "";
     }
 
     function scrollToDataManagerRequests() {
