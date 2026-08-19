@@ -313,6 +313,29 @@
 
     <section id="publicTab" class="tab active">
       <div class="card">
+        <h2>Open Student Account</h2>
+        <p class="subtitle">New students can submit their own information here. Data Manager will review it, and Master Account will approve it.</p>
+        <div class="form-grid">
+          <div><label>Full Name</label><input id="reqFullName" placeholder="Student full name"></div>
+          <div><label>Student Personal Email / Login Email</label><input type="email" id="reqPersonalEmail" placeholder="student@email.com"></div>
+          <div><label>Requested Login Password</label><input id="reqPassword" placeholder="Example: st123456"></div>
+          <div><label>Photo URL</label><input id="reqPhotoUrl" placeholder="Optional direct photo link"></div>
+          <div><label>Designation</label><input id="reqDesignation" placeholder="Article Student"></div>
+          <div><label>Registration No.</label><input id="reqRegistrationNo" placeholder="ICAB registration no."></div>
+          <div><label>Joining Date</label><input type="date" id="reqJoiningDate"></div>
+          <div><label>CA Level</label><input id="reqCaLevel" placeholder="Certificate Level / Professional Level"></div>
+          <div><label>CA Result Summary</label><input id="reqCaResults" placeholder="Running / Passed / Pending"></div>
+          <div><label>Branch</label><input id="reqBranch" placeholder="Panthapath / Bangla Motor"></div>
+          <div><label>Phone</label><input id="reqPhone" placeholder="Private phone"></div>
+          <div><label>Birth Date</label><input type="date" id="reqBirthDate"></div>
+          <div><label>Address</label><input id="reqAddress" placeholder="Private address"></div>
+        </div>
+        <br>
+        <label>Notes</label><textarea id="reqNotes" placeholder="Optional message"></textarea>
+        <div class="btn-row"><button onclick="submitStudentAccountRequest()">Submit Account Request</button><button class="dark" onclick="clearStudentAccountRequestForm()">Clear</button></div>
+      </div>
+
+      <div class="card">
         <h2>All Student Profiles</h2>
         <p class="subtitle">Short profile is shown below. Click student name to open full profile.</p>
         <input class="search" id="publicSearch" placeholder="Search student..." oninput="renderPublicStudents()">
@@ -459,6 +482,22 @@
 
     <section id="dataTab" class="tab">
       <div class="card">
+        <h2>Student Account Requests - Data Manager Review</h2>
+        <p class="subtitle">Review submitted student account requests and assign a Student ID. After review, Master Account can approve.</p>
+        <div class="form-grid">
+          <div><label>Request ID</label><input id="reviewRequestId" readonly placeholder="Load a request first"></div>
+          <div><label>Assigned Student ID</label><input id="reviewAssignedStudentId" placeholder="Example: ST-001"></div>
+          <div><label>Review Note</label><input id="reviewNote" placeholder="Checked and recommended for approval"></div>
+        </div>
+        <div class="btn-row"><button onclick="markRequestReviewed()">Mark as Reviewed</button><button class="dark" onclick="clearReviewForm()">Clear Review Form</button></div>
+        <br>
+        <table>
+          <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Branch</th><th>Status</th><th>Assigned ID</th><th>Action</th></tr></thead>
+          <tbody id="reviewRequestTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
         <h2>Add / Edit Student Data</h2>
         <input type="hidden" id="editingStudentId">
         <div class="form-grid">
@@ -498,6 +537,15 @@
       <div class="notice">Master account can access student profile, fund, vouchers, login credentials, user roles and opening balance.</div>
 
       <div class="card">
+        <h2>Student Account Approval - Master</h2>
+        <p class="subtitle">Approve only after Data Manager review. Approval will create the student profile, private details and login credential record.</p>
+        <table>
+          <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Assigned ID</th><th>Review Note</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="masterRequestTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
         <h2>Student Login Credentials</h2>
         <div class="credential-note">To make login work, create the Auth user in Supabase Authentication using the same email and password, then link profile role as student.</div>
         <table>
@@ -533,6 +581,7 @@
     let userProfiles = [];
     let studentCredentials = [];
     let openingBalances = [];
+    let studentAccountRequests = [];
     let funds = [];
 
     document.addEventListener("DOMContentLoaded", init);
@@ -1041,11 +1090,309 @@
       }, 200);
     }
 
+    async function submitStudentAccountRequest() {
+      const fullName = document.getElementById("reqFullName").value.trim();
+      const email = document.getElementById("reqPersonalEmail").value.trim();
+      const password = document.getElementById("reqPassword").value.trim();
+
+      if (!fullName || !email || !password) {
+        showMessage("Full name, email and requested password are required.", "error");
+        return;
+      }
+
+      const row = {
+        full_name: fullName,
+        personal_email: email,
+        requested_password: password,
+        photo_url: document.getElementById("reqPhotoUrl").value.trim(),
+        designation: document.getElementById("reqDesignation").value.trim(),
+        registration_no: document.getElementById("reqRegistrationNo").value.trim(),
+        joining_date: document.getElementById("reqJoiningDate").value || null,
+        ca_level: document.getElementById("reqCaLevel").value.trim(),
+        ca_results: document.getElementById("reqCaResults").value.trim(),
+        branch: document.getElementById("reqBranch").value.trim(),
+        phone: document.getElementById("reqPhone").value.trim(),
+        birth_date: document.getElementById("reqBirthDate").value || null,
+        address: document.getElementById("reqAddress").value.trim(),
+        notes: document.getElementById("reqNotes").value.trim(),
+        status: "Submitted"
+      };
+
+      const result = await db.from("student_account_requests").insert([row]);
+
+      if (result.error) {
+        showMessage("Account request failed: " + result.error.message, "error");
+        return;
+      }
+
+      clearStudentAccountRequestForm();
+      showMessage("Account request submitted. Data Manager will review it, then Master Account will approve.", "success");
+    }
+
+    function clearStudentAccountRequestForm() {
+      ["reqFullName", "reqPersonalEmail", "reqPassword", "reqPhotoUrl", "reqDesignation", "reqRegistrationNo", "reqJoiningDate", "reqCaLevel", "reqCaResults", "reqBranch", "reqPhone", "reqBirthDate", "reqAddress", "reqNotes"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+    }
+
+    async function loadStudentAccountRequests() {
+      const result = await db
+        .from("student_account_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (result.error) {
+        studentAccountRequests = [];
+        return;
+      }
+
+      studentAccountRequests = result.data || [];
+    }
+
+    function renderReviewRequestTable() {
+      const tbody = document.getElementById("reviewRequestTable");
+      if (!tbody) return;
+
+      const rows = studentAccountRequests.filter(r => r.status !== "Approved");
+
+      tbody.innerHTML = rows.length ? rows.map(r => `
+        <tr>
+          <td>${escapeHtml(formatDate(r.created_at))}</td>
+          <td>${escapeHtml(r.full_name)}</td>
+          <td>${escapeHtml(r.personal_email)}</td>
+          <td>${escapeHtml(r.branch)}</td>
+          <td><strong>${escapeHtml(r.status)}</strong></td>
+          <td>${escapeHtml(r.assigned_student_id)}</td>
+          <td><button class="warning" onclick="loadRequestForReview('${escapeAttribute(r.id)}')">Load Review</button></td>
+        </tr>
+      `).join("") : "<tr><td colspan='7'>No pending account request found.</td></tr>";
+    }
+
+    function loadRequestForReview(requestId) {
+      const req = studentAccountRequests.find(r => String(r.id) === String(requestId));
+      if (!req) {
+        showMessage("Request not found.", "error");
+        return;
+      }
+
+      document.getElementById("reviewRequestId").value = req.id;
+      document.getElementById("reviewAssignedStudentId").value = req.assigned_student_id || "";
+      document.getElementById("reviewNote").value = req.review_note || "Checked and recommended for approval.";
+      showMessage("Request loaded for Data Manager review.", "success");
+    }
+
+    async function markRequestReviewed() {
+      if (!currentProfile || !["data_manager", "master"].includes(currentProfile.role)) {
+        showMessage("Only Data Manager or Master can review student account requests.", "error");
+        return;
+      }
+
+      const requestId = document.getElementById("reviewRequestId").value.trim();
+      const assignedStudentId = document.getElementById("reviewAssignedStudentId").value.trim();
+      const reviewNote = document.getElementById("reviewNote").value.trim();
+
+      if (!requestId) {
+        showMessage("Please load a request first.", "error");
+        return;
+      }
+
+      if (!assignedStudentId) {
+        showMessage("Assigned Student ID is required before review.", "error");
+        return;
+      }
+
+      const result = await db.from("student_account_requests").update({
+        assigned_student_id: assignedStudentId,
+        review_note: reviewNote,
+        status: "Reviewed",
+        reviewed_by: currentUser.id,
+        reviewed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq("id", requestId);
+
+      if (result.error) {
+        showMessage("Review failed: " + result.error.message, "error");
+        return;
+      }
+
+      clearReviewForm();
+      await loadStudentAccountRequests();
+      renderReviewRequestTable();
+      if (currentProfile.role === "master") renderMasterRequestTable();
+      showMessage("Request marked as reviewed. Master Account can now approve it.", "success");
+    }
+
+    function clearReviewForm() {
+      ["reviewRequestId", "reviewAssignedStudentId", "reviewNote"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+    }
+
+    function renderMasterRequestTable() {
+      const tbody = document.getElementById("masterRequestTable");
+      if (!tbody) return;
+
+      const rows = studentAccountRequests.filter(r => r.status === "Reviewed" || r.status === "Submitted" || r.status === "Rejected");
+
+      tbody.innerHTML = rows.length ? rows.map(r => {
+        const canApprove = r.status === "Reviewed" && r.assigned_student_id;
+        const action = canApprove
+          ? `<button class="success" onclick="approveStudentAccountRequest('${escapeAttribute(r.id)}')">Approve</button> <button class="danger" onclick="rejectStudentAccountRequest('${escapeAttribute(r.id)}')">Reject</button>`
+          : (r.status === "Submitted" ? "Waiting for Data Manager review" : "No action");
+
+        return `
+          <tr>
+            <td>${escapeHtml(formatDate(r.created_at))}</td>
+            <td>${escapeHtml(r.full_name)}</td>
+            <td>${escapeHtml(r.personal_email)}</td>
+            <td>${escapeHtml(r.assigned_student_id)}</td>
+            <td>${escapeHtml(r.review_note)}</td>
+            <td><strong>${escapeHtml(r.status)}</strong></td>
+            <td>${action}</td>
+          </tr>
+        `;
+      }).join("") : "<tr><td colspan='7'>No account request waiting for approval.</td></tr>";
+    }
+
+    async function approveStudentAccountRequest(requestId) {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can approve student account requests.", "error");
+        return;
+      }
+
+      const req = studentAccountRequests.find(r => String(r.id) === String(requestId));
+      if (!req) {
+        showMessage("Request not found.", "error");
+        return;
+      }
+
+      if (req.status !== "Reviewed") {
+        showMessage("Request must be reviewed by Data Manager before approval.", "error");
+        return;
+      }
+
+      if (!req.assigned_student_id) {
+        showMessage("Assigned Student ID is required before approval.", "error");
+        return;
+      }
+
+      if (!confirm("Approve this student account request?")) return;
+
+      let birthMonth = null, birthDay = null;
+      if (req.birth_date) {
+        const parts = String(req.birth_date).split("-");
+        birthMonth = Number(parts[1]);
+        birthDay = Number(parts[2]);
+      }
+
+      const publicRow = {
+        student_id: req.assigned_student_id,
+        full_name: req.full_name,
+        photo_url: req.photo_url || "",
+        designation: req.designation || "Article Student",
+        registration_no: req.registration_no || "",
+        joining_date: req.joining_date || null,
+        ca_level: req.ca_level || "",
+        ca_results: req.ca_results || "",
+        branch: req.branch || "",
+        status: "Active",
+        birth_month: birthMonth,
+        birth_day: birthDay
+      };
+
+      const privateRow = {
+        student_id: req.assigned_student_id,
+        phone: req.phone || "",
+        email_private: req.personal_email || "",
+        birth_date: req.birth_date || null,
+        address: req.address || "",
+        notes: req.notes || ""
+      };
+
+      const publicResult = await db.from("students").upsert(publicRow, { onConflict: "student_id" });
+      if (publicResult.error) {
+        showMessage("Student profile create failed: " + publicResult.error.message, "error");
+        return;
+      }
+
+      const privateResult = await db.from("student_details").upsert(privateRow, { onConflict: "student_id" });
+      if (privateResult.error) {
+        showMessage("Private details create failed: " + privateResult.error.message, "error");
+        return;
+      }
+
+      const credentialResult = await db.from("student_login_credentials").upsert({
+        student_id: req.assigned_student_id,
+        student_name: req.full_name,
+        login_email: req.personal_email,
+        temporary_password: req.requested_password,
+        role: "student",
+        status: "Active"
+      }, { onConflict: "student_id" });
+
+      if (credentialResult.error) {
+        showMessage("Credential save failed: " + credentialResult.error.message, "error");
+        return;
+      }
+
+      const updateResult = await db.from("student_account_requests").update({
+        status: "Approved",
+        approval_note: "Approved by Master Account",
+        approved_by: currentUser.id,
+        approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq("id", requestId);
+
+      if (updateResult.error) {
+        showMessage("Request approval update failed: " + updateResult.error.message, "error");
+        return;
+      }
+
+      await loadPublicStudents();
+      await loadStudentCredentials();
+      await loadStudentAccountRequests();
+      renderCredentialTable();
+      renderMasterRequestTable();
+      showMessage("Student account approved. Now create the same email/password as an Auth user in Supabase and link profile role as student.", "success");
+    }
+
+    async function rejectStudentAccountRequest(requestId) {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can reject requests.", "error");
+        return;
+      }
+
+      if (!confirm("Reject this student account request?")) return;
+
+      const note = prompt("Rejection note", "Rejected by Master Account") || "Rejected by Master Account";
+      const result = await db.from("student_account_requests").update({
+        status: "Rejected",
+        approval_note: note,
+        approved_by: currentUser.id,
+        approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq("id", requestId);
+
+      if (result.error) {
+        showMessage("Reject failed: " + result.error.message, "error");
+        return;
+      }
+
+      await loadStudentAccountRequests();
+      renderMasterRequestTable();
+      renderReviewRequestTable();
+      showMessage("Request rejected.", "success");
+    }
+
     async function loadStudentDataManager() {
       const detailsResult = await db.from("student_details").select("*");
       studentDetails = detailsResult.data || [];
+      await loadStudentAccountRequests();
       if (currentProfile && currentProfile.role === "master") await loadStudentCredentials();
       renderDataManagerList();
+      renderReviewRequestTable();
     }
 
     async function loadStudentCredentials() {
@@ -1137,8 +1484,10 @@
       if (profileResult.error) { showMessage(profileResult.error.message, "error"); return; }
       userProfiles = profileResult.data || [];
       await loadStudentCredentials();
+      await loadStudentAccountRequests();
       renderMasterProfiles();
       renderCredentialTable();
+      renderMasterRequestTable();
     }
 
     function renderCredentialTable() {
