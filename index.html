@@ -243,6 +243,130 @@
 
     .credential-note { background: #fef2f2; border: 1px solid #fecaca; color: #7f1d1d; padding: 12px; border-radius: 12px; margin-bottom: 12px; font-size: 13px; font-weight: bold; }
 
+    .request-details-box {
+      display: none;
+      margin: 14px 0;
+      padding: 14px;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--primary);
+      border-radius: 14px;
+    }
+
+    .request-details-box h3 {
+      margin: 0 0 10px;
+    }
+
+    .request-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .request-detail-item {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .request-detail-item span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .request-detail-item strong {
+      display: block;
+      font-size: 14px;
+      color: var(--dark);
+      word-break: break-word;
+    }
+
+
+    .data-action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .data-action-card {
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--primary);
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .data-action-card h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .data-action-card p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 999;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 28px 16px;
+      overflow: auto;
+    }
+
+    .modal-panel {
+      width: min(1120px, 100%);
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      background: linear-gradient(135deg, #000000, #450a0a, #991b1b);
+      color: white;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .modal-body {
+      padding: 18px;
+      max-height: 78vh;
+      overflow: auto;
+    }
+
+    .modal-close {
+      background: #ffffff;
+      color: #7f1d1d;
+      border-radius: 999px;
+      padding: 8px 12px;
+    }
+
+    .modal-open-body {
+      overflow: hidden;
+    }
+
     @media print {
       body * { visibility: hidden; }
       #printArea, #printArea * { visibility: visible; }
@@ -273,6 +397,7 @@
     @media (max-width: 900px) {
       .hero, .row, .profile-grid { grid-template-columns: 1fr; }
       .cards { grid-template-columns: repeat(2, 1fr); }
+      .data-action-grid { grid-template-columns: 1fr; }
       table { display: block; overflow-x: auto; white-space: nowrap; }
     }
 
@@ -522,54 +647,124 @@
 
     <section id="dataTab" class="tab">
       <div class="card">
-        <h2>Student Account Requests - Data Manager Review</h2>
-        <p class="subtitle">Review submitted student account requests and assign a Student ID. After review, Master Account can approve.</p>
-        <div class="form-grid">
-          <div><label>Request ID</label><input id="reviewRequestId" readonly placeholder="Load a request first"></div>
-          <div><label>Assigned Student ID</label><input id="reviewAssignedStudentId" placeholder="Example: ST-001"></div>
-          <div><label>Review Note</label><input id="reviewNote" placeholder="Checked and recommended for approval"></div>
+        <h2>Student Data Manager</h2>
+        <p class="subtitle">Forms are hidden in popup panels. Click Add, Edit, or Review to open the full data panel.</p>
+
+        <div class="data-action-grid">
+          <div class="data-action-card">
+            <h3>Add Student Data</h3>
+            <p>Create a new student profile with public data, private data and login credential record.</p>
+            <button onclick="openAddStudentModal()">Add Student</button>
+          </div>
+
+          <div class="data-action-card">
+            <h3>Review Student Requests</h3>
+            <p>Review submitted student account requests. Full submitted data opens in a popup.</p>
+            <button class="warning" onclick="scrollToDataManagerRequests()">Go to Review List</button>
+          </div>
+
+          <div class="data-action-card">
+            <h3>Student Data List</h3>
+            <p>Search existing students. Click Edit to open the full student data panel.</p>
+            <button class="dark" onclick="scrollToStudentDataList()">Go to Student List</button>
+          </div>
         </div>
-        <div class="btn-row"><button onclick="markRequestReviewed()">Mark as Reviewed</button><button class="dark" onclick="clearReviewForm()">Clear Review Form</button></div>
-        <br>
+      </div>
+
+      <div class="card" id="accountReviewListCard">
+        <h2>Student Account Requests - Data Manager Review</h2>
+        <p class="subtitle">Only submitted requests are listed here. Click Load Review to open the full submitted data panel.</p>
         <table>
           <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Branch</th><th>Status</th><th>Assigned ID</th><th>Action</th></tr></thead>
           <tbody id="reviewRequestTable"></tbody>
         </table>
       </div>
 
-      <div class="card">
-        <h2>Add / Edit Student Data</h2>
-        <input type="hidden" id="editingStudentId">
-        <div class="form-grid">
-          <div><label>Student ID</label><input id="studentId" placeholder="Example: ST-001"></div>
-          <div><label>Full Name</label><input id="fullName" placeholder="Student full name"></div>
-          <div><label>Photo URL</label><input id="photoUrl" placeholder="Paste photo direct URL here"></div>
-          <div><label>Designation</label><input id="designation" placeholder="Article Student"></div>
-          <div><label>Registration No.</label><input id="registrationNo" placeholder="ICAB registration no."></div>
-          <div><label>Joining Date</label><input type="date" id="joiningDate"></div>
-          <div><label>CA Level</label><input id="caLevel" placeholder="Certificate Level / Professional Level"></div>
-          <div><label>CA Result Summary</label><input id="caResults" placeholder="Running / Passed / Pending"></div>
-          <div><label>Branch</label><input id="branch" placeholder="Panthapath / Bangla Motor"></div>
-          <div><label>Status</label><select id="studentStatus"><option>Active</option><option>Inactive</option></select></div>
-          <div><label>Student Personal Email / Login Email</label><input type="email" id="studentLoginEmail" placeholder="student@email.com"></div>
-          <div><label>Temporary Login Password</label><input id="studentTempPassword" placeholder="Example: st123456"></div>
-          <div><label>Private Phone</label><input id="privatePhone"></div>
-          <div><label>Private Email</label><input id="privateEmail"></div>
-          <div><label>Birth Date</label><input type="date" id="birthDate"></div>
-          <div><label>Private Address</label><input id="privateAddress"></div>
+      <div class="card" id="studentDataListCard">
+        <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
+          <div>
+            <h2>Student Data List</h2>
+            <p class="subtitle">Click Edit to open the full data panel. Delete is available only for Master.</p>
+          </div>
+          <button onclick="openAddStudentModal()">Add Student</button>
         </div>
-        <br>
-        <label>Private Notes</label><textarea id="privateNotes"></textarea>
-        <div class="btn-row"><button onclick="saveStudent()">Save Student</button><button class="dark" onclick="clearStudentForm()">Clear</button></div>
-      </div>
 
-      <div class="card">
-        <h2>Student Data List</h2>
         <input class="search" id="dataSearch" placeholder="Search student data..." oninput="renderDataManagerList()">
         <table>
           <thead><tr><th>ID</th><th>Name</th><th>Designation</th><th>Reg. No.</th><th>CA Result</th><th>Branch</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="dataManagerTable"></tbody>
         </table>
+      </div>
+
+      <div id="reviewRequestModal" class="modal-overlay hidden">
+        <div class="modal-panel">
+          <div class="modal-header">
+            <h2>Review Student Account Request</h2>
+            <button class="modal-close" onclick="closeReviewRequestModal()">Close</button>
+          </div>
+
+          <div class="modal-body">
+            <p class="subtitle">All data submitted by the student is shown here. Assign Student ID and mark as reviewed.</p>
+
+            <div class="form-grid">
+              <div><label>Request ID</label><input id="reviewRequestId" readonly placeholder="Load a request first"></div>
+              <div><label>Assigned Student ID</label><input id="reviewAssignedStudentId" placeholder="Example: ST-001"></div>
+              <div><label>Review Note</label><input id="reviewNote" placeholder="Checked and recommended for approval"></div>
+            </div>
+
+            <div id="reviewRequestDetailsBox" class="request-details-box">
+              <h3>Submitted Student Details</h3>
+              <div id="reviewRequestDetails"></div>
+            </div>
+
+            <div class="btn-row">
+              <button onclick="markRequestReviewed()">Mark as Reviewed</button>
+              <button class="dark" onclick="clearReviewForm()">Clear Review Form</button>
+              <button class="light" onclick="closeReviewRequestModal()">Close Panel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="studentFormModal" class="modal-overlay hidden">
+        <div class="modal-panel">
+          <div class="modal-header">
+            <h2 id="studentFormModalTitle">Add / Edit Student Data</h2>
+            <button class="modal-close" onclick="closeStudentFormModal()">Close</button>
+          </div>
+
+          <div class="modal-body">
+            <p class="subtitle">Full student data panel. Fill public profile, private details and login credential information.</p>
+
+            <input type="hidden" id="editingStudentId">
+            <div class="form-grid">
+              <div><label>Student ID</label><input id="studentId" placeholder="Example: ST-001"></div>
+              <div><label>Full Name</label><input id="fullName" placeholder="Student full name"></div>
+              <div><label>Photo URL</label><input id="photoUrl" placeholder="Paste photo direct URL here"></div>
+              <div><label>Designation</label><input id="designation" placeholder="Article Student"></div>
+              <div><label>Registration No.</label><input id="registrationNo" placeholder="ICAB registration no."></div>
+              <div><label>Joining Date</label><input type="date" id="joiningDate"></div>
+              <div><label>CA Level</label><input id="caLevel" placeholder="Certificate Level / Professional Level"></div>
+              <div><label>CA Result Summary</label><input id="caResults" placeholder="Running / Passed / Pending"></div>
+              <div><label>Branch</label><input id="branch" placeholder="Panthapath / Bangla Motor"></div>
+              <div><label>Status</label><select id="studentStatus"><option>Active</option><option>Inactive</option></select></div>
+              <div><label>Student Personal Email / Login Email</label><input type="email" id="studentLoginEmail" placeholder="student@email.com"></div>
+              <div><label>Temporary Login Password</label><input id="studentTempPassword" placeholder="Example: st123456"></div>
+              <div><label>Private Phone</label><input id="privatePhone"></div>
+              <div><label>Private Email</label><input id="privateEmail"></div>
+              <div><label>Birth Date</label><input type="date" id="birthDate"></div>
+              <div><label>Private Address</label><input id="privateAddress"></div>
+            </div>
+
+            <br>
+            <label>Private Notes</label><textarea id="privateNotes"></textarea>
+            <div class="btn-row">
+              <button onclick="saveStudent()">Save Student</button>
+              <button class="dark" onclick="clearStudentForm()">Clear</button>
+              <button class="light" onclick="closeStudentFormModal()">Close Panel</button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1215,7 +1410,7 @@
       const tbody = document.getElementById("reviewRequestTable");
       if (!tbody) return;
 
-      const rows = studentAccountRequests.filter(r => r.status !== "Approved");
+      const rows = studentAccountRequests.filter(r => r.status === "Submitted");
 
       tbody.innerHTML = rows.length ? rows.map(r => `
         <tr>
@@ -1227,7 +1422,7 @@
           <td>${escapeHtml(r.assigned_student_id)}</td>
           <td><button class="warning" onclick="loadRequestForReview('${escapeAttribute(r.id)}')">Load Review</button></td>
         </tr>
-      `).join("") : "<tr><td colspan='7'>No pending account request found.</td></tr>";
+      `).join("") : "<tr><td colspan='7'>No submitted account request found.</td></tr>";
     }
 
     function loadRequestForReview(requestId) {
@@ -1240,7 +1435,38 @@
       document.getElementById("reviewRequestId").value = req.id;
       document.getElementById("reviewAssignedStudentId").value = req.assigned_student_id || "";
       document.getElementById("reviewNote").value = req.review_note || "Checked and recommended for approval.";
+      showReviewRequestDetails(req);
+      openReviewRequestModal();
       showMessage("Request loaded for Data Manager review.", "success");
+    }
+
+    function showReviewRequestDetails(req) {
+      const box = document.getElementById("reviewRequestDetailsBox");
+      const details = document.getElementById("reviewRequestDetails");
+
+      if (!box || !details || !req) return;
+
+      box.style.display = "block";
+      details.innerHTML = `
+        <div class="request-detail-grid">
+          <div class="request-detail-item"><span>Submitted Date</span><strong>${escapeHtml(formatDate(req.created_at))}</strong></div>
+          <div class="request-detail-item"><span>Status</span><strong>${escapeHtml(req.status)}</strong></div>
+          <div class="request-detail-item"><span>Full Name</span><strong>${escapeHtml(req.full_name)}</strong></div>
+          <div class="request-detail-item"><span>Login Email</span><strong>${escapeHtml(req.personal_email)}</strong></div>
+          <div class="request-detail-item"><span>Requested Password</span><strong>${escapeHtml(req.requested_password)}</strong></div>
+          <div class="request-detail-item"><span>Photo URL</span><strong>${escapeHtml(req.photo_url)}</strong></div>
+          <div class="request-detail-item"><span>Designation</span><strong>${escapeHtml(req.designation)}</strong></div>
+          <div class="request-detail-item"><span>Registration No.</span><strong>${escapeHtml(req.registration_no)}</strong></div>
+          <div class="request-detail-item"><span>Joining Date</span><strong>${escapeHtml(req.joining_date)}</strong></div>
+          <div class="request-detail-item"><span>CA Level</span><strong>${escapeHtml(req.ca_level)}</strong></div>
+          <div class="request-detail-item"><span>CA Result Summary</span><strong>${escapeHtml(req.ca_results)}</strong></div>
+          <div class="request-detail-item"><span>Branch</span><strong>${escapeHtml(req.branch)}</strong></div>
+          <div class="request-detail-item"><span>Phone</span><strong>${escapeHtml(req.phone)}</strong></div>
+          <div class="request-detail-item"><span>Birth Date</span><strong>${escapeHtml(req.birth_date)}</strong></div>
+          <div class="request-detail-item"><span>Address</span><strong>${escapeHtml(req.address)}</strong></div>
+          <div class="request-detail-item"><span>Notes</span><strong>${escapeHtml(req.notes)}</strong></div>
+        </div>
+      `;
     }
 
     async function markRequestReviewed() {
@@ -1278,6 +1504,7 @@
       }
 
       clearReviewForm();
+      closeReviewRequestModal(false);
       await loadStudentAccountRequests();
       renderReviewRequestTable();
       if (currentProfile.role === "master") renderMasterRequestTable();
@@ -1289,13 +1516,18 @@
         const el = document.getElementById(id);
         if (el) el.value = "";
       });
+
+      const box = document.getElementById("reviewRequestDetailsBox");
+      const details = document.getElementById("reviewRequestDetails");
+      if (box) box.style.display = "none";
+      if (details) details.innerHTML = "";
     }
 
     function renderMasterRequestTable() {
       const tbody = document.getElementById("masterRequestTable");
       if (!tbody) return;
 
-      const rows = studentAccountRequests.filter(r => r.status === "Reviewed" || r.status === "Submitted" || r.status === "Rejected");
+      const rows = studentAccountRequests.filter(r => r.status === "Reviewed");
 
       tbody.innerHTML = rows.length ? rows.map(r => {
         const canApprove = r.status === "Reviewed" && r.assigned_student_id;
@@ -1314,7 +1546,7 @@
             <td>${action}</td>
           </tr>
         `;
-      }).join("") : "<tr><td colspan='7'>No account request waiting for approval.</td></tr>";
+      }).join("") : "<tr><td colspan='7'>No reviewed account request waiting for approval.</td></tr>";
     }
 
     async function approveStudentAccountRequest(requestId) {
@@ -1454,6 +1686,15 @@
       if (currentProfile && currentProfile.role === "master") await loadStudentCredentials();
       renderDataManagerList();
       renderReviewRequestTable();
+      setDataManagerVisibility();
+    }
+
+    function setDataManagerVisibility() {
+      const listCard = document.getElementById("studentDataListCard");
+      const reviewCard = document.getElementById("accountReviewListCard");
+
+      if (listCard) listCard.classList.remove("hidden");
+      if (reviewCard) reviewCard.classList.remove("hidden");
     }
 
     async function loadStudentCredentials() {
@@ -1498,6 +1739,7 @@
       document.getElementById("privateAddress").value = priv.address || "";
       document.getElementById("privateNotes").value = priv.notes || "";
       openTabById("dataTab");
+      openStudentFormModal("Edit Student Data");
       showMessage("Student loaded for editing.", "success");
     }
 
@@ -1522,6 +1764,7 @@
         if (credentialResult.error) { showMessage("Student saved, but credential save failed: " + credentialResult.error.message, "error"); return; }
       }
       clearStudentForm();
+      closeStudentFormModal();
       await loadPublicStudents();
       await loadStudentDataManager();
       if (currentProfile && currentProfile.role === "master") await loadMasterData();
@@ -1565,6 +1808,52 @@
     function renderMasterProfiles() {
       const tbody = document.getElementById("profileUserTable");
       tbody.innerHTML = userProfiles.length ? userProfiles.map(p => `<tr><td>${escapeHtml(p.email)}</td><td>${escapeHtml(p.full_name)}</td><td>${escapeHtml(p.student_id)}</td><td>${escapeHtml(p.role)}</td><td>${escapeHtml(p.status)}</td></tr>`).join("") : "<tr><td colspan='5'>No user profile found.</td></tr>";
+    }
+
+    function openStudentFormModal(title) {
+      const modal = document.getElementById("studentFormModal");
+      const titleBox = document.getElementById("studentFormModalTitle");
+
+      if (!modal) return;
+      if (titleBox) titleBox.textContent = title || "Add / Edit Student Data";
+
+      modal.classList.remove("hidden");
+      document.body.classList.add("modal-open-body");
+    }
+
+    function closeStudentFormModal() {
+      const modal = document.getElementById("studentFormModal");
+      if (modal) modal.classList.add("hidden");
+      document.body.classList.remove("modal-open-body");
+    }
+
+    function openAddStudentModal() {
+      clearStudentForm();
+      openStudentFormModal("Add Student Data");
+    }
+
+    function openReviewRequestModal() {
+      const modal = document.getElementById("reviewRequestModal");
+      if (!modal) return;
+      modal.classList.remove("hidden");
+      document.body.classList.add("modal-open-body");
+    }
+
+    function closeReviewRequestModal(clearForm = true) {
+      const modal = document.getElementById("reviewRequestModal");
+      if (clearForm) clearReviewForm();
+      if (modal) modal.classList.add("hidden");
+      document.body.classList.remove("modal-open-body");
+    }
+
+    function scrollToDataManagerRequests() {
+      const box = document.getElementById("accountReviewListCard");
+      if (box) box.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function scrollToStudentDataList() {
+      const box = document.getElementById("studentDataListCard");
+      if (box) box.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function openTab(tabId, btn) {
