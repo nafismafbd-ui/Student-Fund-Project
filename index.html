@@ -726,12 +726,48 @@
 
       <div id="fundNameManager" class="card hidden">
         <h2>Fund Name Setup</h2>
-        <p class="subtitle">Only Master Account can create fund names.</p>
+        <p class="subtitle">Only Master Account can create, reset or delete fund names.</p>
+
+        <h3>Create / Update Fund Name</h3>
         <div class="form-grid">
           <div><label>Fund Name</label><input id="newFundName" placeholder="Example: Welfare Fund"></div>
           <div><label>Description</label><input id="newFundDescription" placeholder="Optional"></div>
         </div>
-        <div class="btn-row"><button onclick="saveFundName()">Save Fund Name</button></div>
+        <div class="btn-row">
+          <button onclick="saveFundName()">Save Fund Name</button>
+          <button class="dark" onclick="clearFundNameForm()">Clear</button>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--border); margin:22px 0;">
+
+        <h3>Reset / Delete Existing Fund</h3>
+        <p class="subtitle">Reset keeps the fund name but deletes all related fund data. Delete removes the fund name after deleting all related fund data.</p>
+
+        <div class="form-grid">
+          <div>
+            <label>Select Fund</label>
+            <select id="fundManageSelect"></select>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="warning" onclick="resetSelectedFundData()">Reset Fund Data</button>
+          <button class="danger" onclick="deleteSelectedFund()">Delete Fund</button>
+        </div>
+
+        <br>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Fund Name</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="fundManagementTable"></tbody>
+        </table>
       </div>
 
       <div id="openingBalanceManager" class="card hidden">
@@ -1246,7 +1282,7 @@
     }
 
     function fillAllFundSelects() {
-      ["openingFund", "receivableFund", "paymentFund", "expenseFund", "voucherFund", "monthlySheetFund"].forEach(fillFundSelect);
+      ["openingFund", "receivableFund", "paymentFund", "expenseFund", "voucherFund", "monthlySheetFund", "fundManageSelect"].forEach(fillFundSelect);
     }
 
     async function saveFundName() {
@@ -1256,10 +1292,154 @@
       if (!fundName) { showMessage("Fund name is required.", "error"); return; }
       const result = await db.from("student_funds").upsert({ fund_name: fundName, description, status: "Active" }, { onConflict: "fund_name" });
       if (result.error) { showMessage(result.error.message, "error"); return; }
-      document.getElementById("newFundName").value = "";
-      document.getElementById("newFundDescription").value = "";
+      clearFundNameForm();
       await loadFundData();
       showMessage("Fund name saved successfully.", "success");
+    }
+
+    function clearFundNameForm() {
+      const nameEl = document.getElementById("newFundName");
+      const descEl = document.getElementById("newFundDescription");
+      if (nameEl) nameEl.value = "";
+      if (descEl) descEl.value = "";
+    }
+
+    function renderFundManagementTable() {
+      const tbody = document.getElementById("fundManagementTable");
+      if (!tbody) return;
+
+      if (!funds || funds.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4'>No fund found.</td></tr>";
+        return;
+      }
+
+      tbody.innerHTML = funds.map(function (f) {
+        return `
+          <tr>
+            <td>${escapeHtml(f.fund_name)}</td>
+            <td>${escapeHtml(f.description)}</td>
+            <td>${escapeHtml(f.status || "Active")}</td>
+            <td>
+              <button class="warning" onclick="selectFundForManage('${escapeAttribute(f.fund_name)}')">Select</button>
+              <button class="warning" onclick="resetSelectedFundData('${escapeAttribute(f.fund_name)}')">Reset</button>
+              <button class="danger" onclick="deleteSelectedFund('${escapeAttribute(f.fund_name)}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function selectFundForManage(fundName) {
+      const el = document.getElementById("fundManageSelect");
+      if (el) el.value = fundName;
+      showMessage("Fund selected: " + fundName, "success");
+    }
+
+    async function deleteRows(tableName, columnName, value) {
+      const result = await db.from(tableName).delete().eq(columnName, value);
+      if (result.error) throw new Error(result.error.message);
+    }
+
+    async function resetFundDataByName(fundName) {
+      const voucherResult = await db
+        .from("student_fund_vouchers")
+        .select("id")
+        .eq("fund_name", fundName);
+
+      if (voucherResult.error) throw new Error(voucherResult.error.message);
+
+      const voucherIds = (voucherResult.data || []).map(function (v) { return v.id; });
+
+      if (voucherIds.length > 0) {
+        const itemDelete = await db
+          .from("student_fund_voucher_items")
+          .delete()
+          .in("voucher_id", voucherIds);
+
+        if (itemDelete.error) throw new Error(itemDelete.error.message);
+      }
+
+      await deleteRows("student_fund_vouchers", "fund_name", fundName);
+      await deleteRows("fund_payments", "fund_name", fundName);
+      await deleteRows("payments", "fund_name", fundName);
+      await deleteRows("receivables", "fund_name", fundName);
+      await deleteRows("student_opening_balances", "fund_name", fundName);
+    }
+
+    async function resetSelectedFundData(fundNameFromButton) {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can reset fund data.", "error");
+        return;
+      }
+
+      const fundName = fundNameFromButton || document.getElementById("fundManageSelect").value;
+
+      if (!fundName) {
+        showMessage("Please select a fund.", "error");
+        return;
+      }
+
+      const ok = confirm(
+        "Reset this fund data?\n\n" +
+        "Fund: " + fundName + "\n\n" +
+        "This will delete opening balances, receivables, received fund, fund payments and vouchers for this fund. The fund name will remain."
+      );
+
+      if (!ok) return;
+
+      try {
+        await resetFundDataByName(fundName);
+        await loadFundData();
+        showMessage("Fund data reset successfully.", "success");
+      } catch (err) {
+        showMessage("Fund reset failed: " + err.message, "error");
+      }
+    }
+
+    async function deleteSelectedFund(fundNameFromButton) {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can delete fund.", "error");
+        return;
+      }
+
+      const fundName = fundNameFromButton || document.getElementById("fundManageSelect").value;
+
+      if (!fundName) {
+        showMessage("Please select a fund.", "error");
+        return;
+      }
+
+      if (funds.length <= 1) {
+        showMessage("At least one fund must remain. You can reset this fund data instead.", "error");
+        return;
+      }
+
+      const ok = confirm(
+        "Delete this fund permanently?\n\n" +
+        "Fund: " + fundName + "\n\n" +
+        "This will first delete all related fund data and then delete the fund name."
+      );
+
+      if (!ok) return;
+
+      const finalOk = confirm("Final confirmation: Delete fund permanently? This cannot be undone.");
+      if (!finalOk) return;
+
+      try {
+        await resetFundDataByName(fundName);
+
+        const result = await db
+          .from("student_funds")
+          .delete()
+          .eq("fund_name", fundName);
+
+        if (result.error) throw new Error(result.error.message);
+
+        await loadFundData();
+        showMessage("Fund deleted successfully.", "success");
+      } catch (err) {
+        showMessage("Fund delete failed: " + err.message, "error");
+      }
     }
 
     async function loadOpeningBalances() {
@@ -1416,6 +1596,7 @@
       document.getElementById("openingBalanceManager").classList.toggle("hidden", currentProfile.role !== "master");
       document.getElementById("fundNameManager").classList.toggle("hidden", currentProfile.role !== "master");
       fillAllFundSelects();
+      renderFundManagementTable();
       renderStudentDropdowns();
       renderOpeningBalanceTable();
       renderFundCards();
