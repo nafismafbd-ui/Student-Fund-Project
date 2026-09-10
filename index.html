@@ -1577,6 +1577,59 @@
       });
     }
 
+
+    async function submitStudentAccountRequest() {
+      const fullName = document.getElementById("reqFullName").value.trim();
+      const loginEmail = document.getElementById("reqPersonalEmail").value.trim();
+      const requestedPassword = document.getElementById("reqPassword").value.trim();
+
+      if (!fullName) {
+        showMessage("Full name is required.", "error");
+        return;
+      }
+
+      if (!loginEmail) {
+        showMessage("Student personal email / login email is required.", "error");
+        return;
+      }
+
+      if (!requestedPassword) {
+        showMessage("Requested login password is required.", "error");
+        return;
+      }
+
+      const row = {
+        full_name: fullName,
+        login_email: loginEmail,
+        requested_password: requestedPassword,
+        photo_url: document.getElementById("reqPhotoUrl").value.trim(),
+        designation: document.getElementById("reqDesignation").value.trim(),
+        registration_no: document.getElementById("reqRegistrationNo").value.trim(),
+        joining_date: document.getElementById("reqJoiningDate").value || null,
+        ca_level: document.getElementById("reqCaLevel").value.trim(),
+        ca_results: document.getElementById("reqCaResults").value.trim(),
+        branch: document.getElementById("reqBranch").value.trim(),
+        phone: document.getElementById("reqPhone").value.trim(),
+        birth_date: document.getElementById("reqBirthDate").value || null,
+        address: document.getElementById("reqAddress").value.trim(),
+        notes: document.getElementById("reqNotes").value.trim(),
+        status: "Submitted"
+      };
+
+      const result = await db
+        .from("student_account_requests")
+        .insert([row]);
+
+      if (result.error) {
+        showMessage("Request submit failed: " + result.error.message, "error");
+        return;
+      }
+
+      clearStudentAccountRequestForm();
+      closeStudentAccountRequestModal();
+      showMessage("Account request submitted successfully. Data Manager will review it.", "success");
+    }
+
     async function loadStudentAccountRequests() {
       const result = await db
         .from("student_account_requests")
@@ -1601,7 +1654,7 @@
         <tr>
           <td>${escapeHtml(formatDate(r.created_at))}</td>
           <td>${escapeHtml(r.full_name)}</td>
-          <td>${escapeHtml(r.personal_email)}</td>
+          <td>${escapeHtml(r.login_email)}</td>
           <td>${escapeHtml(r.branch)}</td>
           <td><strong>${escapeHtml(r.status)}</strong></td>
           <td>${escapeHtml(r.assigned_student_id)}</td>
@@ -1637,7 +1690,7 @@
           <div class="request-detail-item"><span>Submitted Date</span><strong>${escapeHtml(formatDate(req.created_at))}</strong></div>
           <div class="request-detail-item"><span>Status</span><strong>${escapeHtml(req.status)}</strong></div>
           <div class="request-detail-item"><span>Full Name</span><strong>${escapeHtml(req.full_name)}</strong></div>
-          <div class="request-detail-item"><span>Login Email</span><strong>${escapeHtml(req.personal_email)}</strong></div>
+          <div class="request-detail-item"><span>Login Email</span><strong>${escapeHtml(req.login_email)}</strong></div>
           <div class="request-detail-item"><span>Requested Password</span><strong>${escapeHtml(req.requested_password)}</strong></div>
           <div class="request-detail-item"><span>Photo URL</span><strong>${escapeHtml(req.photo_url)}</strong></div>
           <div class="request-detail-item"><span>Designation</span><strong>${escapeHtml(req.designation)}</strong></div>
@@ -1730,7 +1783,7 @@
           <tr>
             <td>${escapeHtml(formatDate(r.created_at))}</td>
             <td>${escapeHtml(r.full_name)}</td>
-            <td>${escapeHtml(r.personal_email)}</td>
+            <td>${escapeHtml(r.login_email)}</td>
             <td><strong>${escapeHtml(r.requested_password)}</strong></td>
             <td>${escapeHtml(r.assigned_student_id)}</td>
             <td>${escapeHtml(r.review_note)}</td>
@@ -1790,7 +1843,7 @@
       const privateRow = {
         student_id: req.assigned_student_id,
         phone: req.phone || "",
-        email_private: req.personal_email || "",
+        email_private: req.login_email || "",
         birth_date: req.birth_date || null,
         address: req.address || "",
         notes: req.notes || ""
@@ -1811,7 +1864,7 @@
       const credentialResult = await db.from("student_login_credentials").upsert({
         student_id: req.assigned_student_id,
         student_name: req.full_name,
-        login_email: req.personal_email,
+        login_email: req.login_email,
         temporary_password: req.requested_password,
         role: "student",
         status: "Active"
