@@ -1037,7 +1037,8 @@
 
     <section id="fundTab" class="tab">
       <div class="cards">
-        <div class="card stat"><h3>Total Opening Balance</h3><div class="value" id="totalOpeningBalance">0.00</div></div>
+        <div class="card stat"><h3>Student Opening Balance</h3><div class="value" id="totalOpeningBalance">0.00</div></div>
+        <div class="card stat"><h3>Cash in Hand Opening</h3><div class="value" id="totalCashInHandOpening">0.00</div></div>
         <div class="card stat"><h3>Total Due</h3><div class="value" id="totalDueBalance">0.00</div></div>
         <div class="card stat"><h3>Total Received</h3><div class="value" id="totalReceivedBalance">0.00</div></div>
         <div class="card stat"><h3>Total Payment</h3><div class="value" id="totalPaymentBalance">0.00</div></div>
@@ -1090,8 +1091,8 @@
       </div>
 
       <div id="openingBalanceManager" class="card hidden">
-        <h2>Add / Update Opening Balance</h2>
-        <p class="subtitle">Opening balance is maintained by student and fund name. Only Master can add/update.</p>
+        <h2>Add / Update Student Opening Balance</h2>
+        <p class="subtitle">Student opening balance is maintained by student and fund name. Only Master can add/update.</p>
         <div class="form-grid">
           <div><label>Fund Name</label><select id="openingFund"></select></div>
           <div><label>Student</label><select id="openingStudent"></select></div>
@@ -1106,10 +1107,35 @@
       </div>
 
       <div class="card">
-        <h2>Opening Balance List</h2>
+        <h2>Student Opening Balance List</h2>
         <table>
           <thead><tr><th>Fund</th><th>Student</th><th>Opening Balance</th><th>Remarks</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="openingBalanceTable"></tbody>
+        </table>
+      </div>
+
+      <div id="cashInHandOpeningManager" class="card hidden">
+        <h2>Add / Update Cash in Hand Opening Balance</h2>
+        <p class="subtitle">Cash in hand opening balance is maintained by fund and fund manager. Only Master can add/update.</p>
+        <div class="form-grid">
+          <div><label>Fund Name</label><select id="cashOpeningFund"></select></div>
+          <div><label>Fund Manager / Cash Holder</label><select id="cashOpeningHolder"></select></div>
+          <div><label>Cash in Hand Opening Balance</label><input type="number" id="cashOpeningAmount" placeholder="Example: 1000"></div>
+          <div><label>Opening Date</label><input type="date" id="cashOpeningDate"></div>
+          <div><label>Status</label><select id="cashOpeningStatus"><option>Active</option><option>Inactive</option></select></div>
+          <div><label>Remarks</label><input id="cashOpeningRemarks" placeholder="Cash in hand with fund manager"></div>
+        </div>
+        <div class="btn-row">
+          <button onclick="saveCashInHandOpening()">Save Cash in Hand</button>
+          <button class="dark" onclick="clearCashInHandOpeningForm()">Clear</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Cash in Hand Opening Balance List</h2>
+        <table>
+          <thead><tr><th>Fund</th><th>Fund Manager / Cash Holder</th><th>Opening Date</th><th>Cash in Hand</th><th>Remarks</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="cashInHandOpeningTable"></tbody>
         </table>
       </div>
 
@@ -1391,6 +1417,7 @@
     let userProfiles = [];
     let studentCredentials = [];
     let openingBalances = [];
+    let cashInHandOpeningBalances = [];
     let studentAccountRequests = [];
     let funds = [];
 
@@ -1601,7 +1628,7 @@
     }
 
     function fillAllFundSelects() {
-      ["openingFund", "receivableFund", "paymentFund", "expenseFund", "voucherFund", "monthlySheetFund", "fundManageSelect"].forEach(fillFundSelect);
+      ["openingFund", "cashOpeningFund", "receivableFund", "paymentFund", "expenseFund", "voucherFund", "monthlySheetFund", "fundManageSelect"].forEach(fillFundSelect);
     }
 
     async function saveFundName() {
@@ -1683,6 +1710,7 @@
       await deleteRows("payments", "fund_name", fundName);
       await deleteRows("receivables", "fund_name", fundName);
       await deleteRows("student_opening_balances", "fund_name", fundName);
+      await deleteRows("fund_cash_in_hand_opening", "fund_name", fundName);
     }
 
     async function resetSelectedFundData(fundNameFromButton) {
@@ -1764,6 +1792,15 @@
     async function loadOpeningBalances() {
       const result = await db.from("student_opening_balances").select("*").order("student_name", { ascending: true });
       openingBalances = result.error ? [] : (result.data || []);
+    }
+
+    async function loadCashInHandOpeningBalances() {
+      const result = await db
+        .from("fund_cash_in_hand_opening")
+        .select("*")
+        .order("fund_name", { ascending: true });
+
+      cashInHandOpeningBalances = result.error ? [] : (result.data || []);
     }
 
     function getOpeningBalance(studentId, fundName) {
@@ -1904,6 +1941,7 @@
     async function loadFundData() {
       await loadFunds();
       await loadOpeningBalances();
+      await loadCashInHandOpeningBalances();
       const recResult = await db.from("receivables").select("*").order("created_at", { ascending: false });
       const payResult = await db.from("payments").select("*").order("created_at", { ascending: false });
       const expenseResult = await db.from("fund_payments").select("*").order("payment_date", { ascending: false });
@@ -1913,11 +1951,13 @@
       payments = payResult.data || [];
       fundPayments = expenseResult.error ? [] : (expenseResult.data || []);
       document.getElementById("openingBalanceManager").classList.toggle("hidden", currentProfile.role !== "master");
+      document.getElementById("cashInHandOpeningManager").classList.toggle("hidden", currentProfile.role !== "master");
       document.getElementById("fundNameManager").classList.toggle("hidden", currentProfile.role !== "master");
       fillAllFundSelects();
       renderFundManagementTable();
       renderStudentDropdowns();
       renderOpeningBalanceTable();
+      renderCashInHandOpeningTable();
       renderFundCards();
       renderFundTables();
     }
@@ -1928,9 +1968,11 @@
       const paySelect = document.getElementById("paymentStudent");
       const recLinkSelect = document.getElementById("paymentReceivable");
       const openingSelect = document.getElementById("openingStudent");
+      const cashHolderSelect = document.getElementById("cashOpeningHolder");
       recSelect.innerHTML = `<option value="ALL">All Active Students</option>`;
       paySelect.innerHTML = "";
       openingSelect.innerHTML = "";
+      if (cashHolderSelect) cashHolderSelect.innerHTML = "";
       recLinkSelect.innerHTML = `<option value="">No linked receivable</option>`;
       active.forEach(s => {
         const responsibility = s.fund_responsibility && s.fund_responsibility !== "Student" ? ` | ${s.fund_responsibility}` : "";
@@ -1939,6 +1981,21 @@
         paySelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
         openingSelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
       });
+
+      const fundManagers = active.filter(function (s) {
+        return s.fund_responsibility === "Fund Manager" || s.fund_responsibility === "Assistant Fund Manager";
+      });
+
+      if (cashHolderSelect) {
+        if (fundManagers.length === 0) {
+          cashHolderSelect.innerHTML = `<option value="">No Fund Manager found. First select Fund Responsibility in Student Data.</option>`;
+        } else {
+          fundManagers.forEach(function (s) {
+            const text = `${s.student_id} - ${s.full_name} | ${s.fund_responsibility}`;
+            cashHolderSelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
+          });
+        }
+      }
       receivables.filter(r => r.status !== "Paid").forEach(r => {
         recLinkSelect.innerHTML += `<option value="${escapeAttribute(r.id)}">${escapeHtml(r.fund_name)} | ${escapeHtml(r.student_id)} - ${escapeHtml(r.description)} - ${money(r.amount)}</option>`;
       });
@@ -1987,12 +2044,119 @@
       document.getElementById("openingStatus").value = "Active";
     }
 
+    function renderCashInHandOpeningTable() {
+      const tbody = document.getElementById("cashInHandOpeningTable");
+      if (!tbody) return;
+
+      if (cashInHandOpeningBalances.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='7'>No cash in hand opening balance found.</td></tr>";
+        return;
+      }
+
+      tbody.innerHTML = cashInHandOpeningBalances.map(function (o) {
+        const action = currentProfile && currentProfile.role === "master"
+          ? `<button class="warning" onclick="editCashInHandOpening('${escapeAttribute(o.cash_holder_student_id)}','${escapeAttribute(o.fund_name)}')">Edit</button>`
+          : "View only";
+
+        return `
+          <tr>
+            <td>${escapeHtml(o.fund_name)}</td>
+            <td>${escapeHtml(o.cash_holder_student_id)} - ${escapeHtml(o.cash_holder_name)}</td>
+            <td>${escapeHtml(o.opening_date)}</td>
+            <td>${money(o.opening_cash)}</td>
+            <td>${escapeHtml(o.remarks)}</td>
+            <td>${escapeHtml(o.status)}</td>
+            <td>${action}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function editCashInHandOpening(holderStudentId, fundName) {
+      const row = cashInHandOpeningBalances.find(function (o) {
+        return o.cash_holder_student_id === holderStudentId && o.fund_name === fundName;
+      });
+
+      if (!row) return;
+
+      document.getElementById("cashOpeningFund").value = row.fund_name;
+      document.getElementById("cashOpeningHolder").value = row.cash_holder_student_id;
+      document.getElementById("cashOpeningAmount").value = row.opening_cash || 0;
+      document.getElementById("cashOpeningDate").value = row.opening_date || "";
+      document.getElementById("cashOpeningRemarks").value = row.remarks || "";
+      document.getElementById("cashOpeningStatus").value = row.status || "Active";
+
+      showMessage("Cash in hand opening balance loaded for editing.", "success");
+    }
+
+    async function saveCashInHandOpening() {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can save cash in hand opening balance.", "error");
+        return;
+      }
+
+      const fundName = document.getElementById("cashOpeningFund").value;
+      const holderStudentId = document.getElementById("cashOpeningHolder").value;
+      const amount = Number(document.getElementById("cashOpeningAmount").value || 0);
+      const openingDate = document.getElementById("cashOpeningDate").value || new Date().toISOString().slice(0, 10);
+      const remarks = document.getElementById("cashOpeningRemarks").value.trim();
+      const status = document.getElementById("cashOpeningStatus").value;
+
+      const holder = students.find(function (s) { return s.student_id === holderStudentId; });
+
+      if (!fundName) {
+        showMessage("Please select fund name.", "error");
+        return;
+      }
+
+      if (!holder) {
+        showMessage("Please select Fund Manager / Cash Holder.", "error");
+        return;
+      }
+
+      const row = {
+        fund_name: fundName,
+        cash_holder_student_id: holder.student_id,
+        cash_holder_name: holder.full_name,
+        opening_cash: amount,
+        opening_date: openingDate,
+        remarks: remarks,
+        status: status,
+        updated_by: currentUser.id,
+        updated_at: new Date().toISOString()
+      };
+
+      const result = await db
+        .from("fund_cash_in_hand_opening")
+        .upsert(row, { onConflict: "fund_name,cash_holder_student_id" });
+
+      if (result.error) {
+        showMessage(result.error.message, "error");
+        return;
+      }
+
+      clearCashInHandOpeningForm();
+      await loadFundData();
+      showMessage("Cash in hand opening balance saved successfully.", "success");
+    }
+
+    function clearCashInHandOpeningForm() {
+      document.getElementById("cashOpeningAmount").value = "";
+      document.getElementById("cashOpeningRemarks").value = "";
+      document.getElementById("cashOpeningStatus").value = "Active";
+      const dateInput = document.getElementById("cashOpeningDate");
+      if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+
     function renderFundCards() {
       const totalOpening = openingBalances.filter(o => o.status === "Active").reduce((sum, o) => sum + Number(o.opening_balance || 0), 0);
+      const totalCashInHandOpening = cashInHandOpeningBalances.filter(o => o.status === "Active").reduce((sum, o) => sum + Number(o.opening_cash || 0), 0);
       const unpaidReceivable = receivables.filter(r => r.status !== "Paid").reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const totalReceived = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
       const totalExpense = fundPayments.filter(e => e.status === "Active").reduce((sum, e) => sum + Number(e.amount || 0), 0);
       document.getElementById("totalOpeningBalance").textContent = money(totalOpening);
+      const cashOpeningEl = document.getElementById("totalCashInHandOpening");
+      if (cashOpeningEl) cashOpeningEl.textContent = money(totalCashInHandOpening);
       document.getElementById("totalDueBalance").textContent = money(totalOpening + unpaidReceivable);
       document.getElementById("totalReceivedBalance").textContent = money(totalReceived);
       document.getElementById("totalPaymentBalance").textContent = money(totalExpense);
