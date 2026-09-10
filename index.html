@@ -897,7 +897,7 @@
 
         <input class="search" id="dataSearch" placeholder="Search student data..." oninput="renderDataManagerList()">
         <table>
-          <thead><tr><th>ID</th><th>Name</th><th>Designation</th><th>Reg. No.</th><th>CA Result</th><th>Branch</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>ID</th><th>Name</th><th>Designation</th><th>Reg. No.</th><th>CA Result</th><th>Branch</th><th>Fund Role</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="dataManagerTable"></tbody>
         </table>
       </div>
@@ -953,6 +953,7 @@
               <div><label>CA Level</label><input id="caLevel" placeholder="Certificate Level / Professional Level"></div>
               <div><label>CA Result Summary</label><input id="caResults" placeholder="Running / Passed / Pending"></div>
               <div><label>Branch</label><input id="branch" placeholder="Panthapath / Bangla Motor"></div>
+              <div><label>Fund Responsibility</label><select id="fundResponsibility"><option>Student</option><option>Fund Manager</option><option>Assistant Fund Manager</option></select></div>
               <div><label>Status</label><select id="studentStatus"><option>Active</option><option>Inactive</option></select></div>
               <div><label>Student Personal Email / Login Email</label><input type="email" id="studentLoginEmail" placeholder="student@email.com"></div>
               <div><label>Temporary Login Password</label><input id="studentTempPassword" placeholder="Example: st123456"></div>
@@ -1161,7 +1162,7 @@
           <div class="public-photo">${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}</div>
           <div>
             <h3 class="student-name" onclick="openPublicProfile('${escapeAttribute(s.student_id)}')">${escapeHtml(s.full_name)}</h3>
-            <div class="short-meta"><span>ID: ${escapeHtml(s.student_id)}</span><span>${escapeHtml(s.designation)}</span><span>${escapeHtml(s.branch)}</span><span>${escapeHtml(s.status)}</span></div>
+            <div class="short-meta"><span>ID: ${escapeHtml(s.student_id)}</span><span>${escapeHtml(s.designation)}</span><span>${escapeHtml(s.branch)}</span><span>${escapeHtml(s.fund_responsibility || "Student")}</span><span>${escapeHtml(s.status)}</span></div>
           </div>
         </div>`).join("");
     }
@@ -1191,6 +1192,7 @@
             <div class="info"><span>CA Level</span><strong>${escapeHtml(s.ca_level)}</strong></div>
             <div class="info"><span>CA Result</span><strong>${escapeHtml(s.ca_results)}</strong></div>
             <div class="info"><span>Branch</span><strong>${escapeHtml(s.branch)}</strong></div>
+            <div class="info"><span>Fund Responsibility</span><strong>${escapeHtml(s.fund_responsibility || "Student")}</strong></div>
             <div class="info"><span>Status</span><strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</strong></div>
           </div>
         </div>`;
@@ -1317,6 +1319,7 @@
             <div class="info"><span>CA Level</span><strong>${escapeHtml(pub.ca_level)}</strong></div>
             <div class="info"><span>CA Result</span><strong>${escapeHtml(pub.ca_results)}</strong></div>
             <div class="info"><span>Branch</span><strong>${escapeHtml(pub.branch)}</strong></div>
+            <div class="info"><span>Fund Responsibility</span><strong>${escapeHtml(pub.fund_responsibility || "Student")}</strong></div>
             <div class="info"><span>Status</span><strong class="${pub.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(pub.status)}</strong></div>
 
             <h3>Private Details</h3>
@@ -1430,7 +1433,8 @@
       openingSelect.innerHTML = "";
       recLinkSelect.innerHTML = `<option value="">No linked receivable</option>`;
       active.forEach(s => {
-        const text = `${s.student_id} - ${s.full_name}`;
+        const responsibility = s.fund_responsibility && s.fund_responsibility !== "Student" ? ` | ${s.fund_responsibility}` : "";
+        const text = `${s.student_id} - ${s.full_name}${responsibility}`;
         recSelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
         paySelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
         openingSelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
@@ -2052,7 +2056,7 @@
     function renderDataManagerList() {
       const tbody = document.getElementById("dataManagerTable");
       const search = document.getElementById("dataSearch").value.toLowerCase();
-      const rows = students.filter(s => safe(s.student_id).toLowerCase().includes(search) || safe(s.full_name).toLowerCase().includes(search) || safe(s.designation).toLowerCase().includes(search) || safe(s.registration_no).toLowerCase().includes(search) || safe(s.ca_results).toLowerCase().includes(search) || safe(s.branch).toLowerCase().includes(search));
+      const rows = students.filter(s => safe(s.student_id).toLowerCase().includes(search) || safe(s.full_name).toLowerCase().includes(search) || safe(s.designation).toLowerCase().includes(search) || safe(s.registration_no).toLowerCase().includes(search) || safe(s.ca_results).toLowerCase().includes(search) || safe(s.branch).toLowerCase().includes(search) || safe(s.fund_responsibility).toLowerCase().includes(search));
       tbody.innerHTML = rows.length ? rows.map(s => {
         const viewProfileButton = currentProfile && currentProfile.role === "master"
           ? `<button class="success" onclick="openMasterStudentProfile('${escapeAttribute(s.student_id)}')">View Profile</button>`
@@ -2062,8 +2066,8 @@
           ? `<button class="dark" onclick="deleteStudent('${escapeAttribute(s.student_id)}')">Delete</button>`
           : "";
 
-        return `<tr><td>${escapeHtml(s.student_id)}</td><td>${escapeHtml(s.full_name)}</td><td>${escapeHtml(s.designation)}</td><td>${escapeHtml(s.registration_no)}</td><td>${escapeHtml(s.ca_results)}</td><td>${escapeHtml(s.branch)}</td><td><span class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</span></td><td>${viewProfileButton}<button class="warning" onclick="editStudent('${escapeAttribute(s.student_id)}')">Edit</button><button class="danger" onclick="deactivateStudent('${escapeAttribute(s.student_id)}')">Deactivate</button>${deleteButton}</td></tr>`;
-      }).join("") : "<tr><td colspan='8'>No student found.</td></tr>";
+        return `<tr><td>${escapeHtml(s.student_id)}</td><td>${escapeHtml(s.full_name)}</td><td>${escapeHtml(s.designation)}</td><td>${escapeHtml(s.registration_no)}</td><td>${escapeHtml(s.ca_results)}</td><td>${escapeHtml(s.branch)}</td><td>${escapeHtml(s.fund_responsibility || "Student")}</td><td><span class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</span></td><td>${viewProfileButton}<button class="warning" onclick="editStudent('${escapeAttribute(s.student_id)}')">Edit</button><button class="danger" onclick="deactivateStudent('${escapeAttribute(s.student_id)}')">Deactivate</button>${deleteButton}</td></tr>`;
+      }).join("") : "<tr><td colspan='9'>No student found.</td></tr>";
     }
 
     function editStudent(studentId) {
@@ -2081,6 +2085,7 @@
       document.getElementById("caLevel").value = pub.ca_level || "";
       document.getElementById("caResults").value = pub.ca_results || "";
       document.getElementById("branch").value = pub.branch || "";
+      document.getElementById("fundResponsibility").value = pub.fund_responsibility || "Student";
       document.getElementById("studentStatus").value = pub.status || "Active";
       document.getElementById("studentLoginEmail").value = cred.login_email || "";
       document.getElementById("studentTempPassword").value = cred.temporary_password || "";
@@ -2100,7 +2105,7 @@
       const birthDateValue = document.getElementById("birthDate").value || null;
       let birthMonth = null, birthDay = null;
       if (birthDateValue) { const parts = birthDateValue.split("-"); birthMonth = Number(parts[1]); birthDay = Number(parts[2]); }
-      const publicRow = { student_id: sid, full_name: document.getElementById("fullName").value.trim(), photo_url: document.getElementById("photoUrl").value.trim(), designation: document.getElementById("designation").value.trim(), registration_no: document.getElementById("registrationNo").value.trim(), joining_date: document.getElementById("joiningDate").value || null, ca_level: document.getElementById("caLevel").value.trim(), ca_results: document.getElementById("caResults").value.trim(), branch: document.getElementById("branch").value.trim(), status: document.getElementById("studentStatus").value, birth_month: birthMonth, birth_day: birthDay };
+      const publicRow = { student_id: sid, full_name: document.getElementById("fullName").value.trim(), photo_url: document.getElementById("photoUrl").value.trim(), designation: document.getElementById("designation").value.trim(), registration_no: document.getElementById("registrationNo").value.trim(), joining_date: document.getElementById("joiningDate").value || null, ca_level: document.getElementById("caLevel").value.trim(), ca_results: document.getElementById("caResults").value.trim(), branch: document.getElementById("branch").value.trim(), fund_responsibility: document.getElementById("fundResponsibility").value, status: document.getElementById("studentStatus").value, birth_month: birthMonth, birth_day: birthDay };
       const privateRow = { student_id: sid, phone: document.getElementById("privatePhone").value.trim(), email_private: document.getElementById("privateEmail").value.trim(), birth_date: birthDateValue, address: document.getElementById("privateAddress").value.trim(), notes: document.getElementById("privateNotes").value.trim() };
       const loginEmail = document.getElementById("studentLoginEmail").value.trim();
       const tempPassword = document.getElementById("studentTempPassword").value.trim();
@@ -2136,6 +2141,7 @@
 
     function clearStudentForm() {
       ["editingStudentId", "studentId", "fullName", "photoUrl", "designation", "registrationNo", "joiningDate", "caLevel", "caResults", "branch", "studentLoginEmail", "studentTempPassword", "privatePhone", "privateEmail", "birthDate", "privateAddress", "privateNotes"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("fundResponsibility").value = "Student";
       document.getElementById("studentId").readOnly = false;
       document.getElementById("studentStatus").value = "Active";
     }
