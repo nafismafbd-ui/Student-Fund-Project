@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MAF Student Server</title>
+  <title>MAF Server</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -135,13 +135,125 @@
 
     .birthday-box {
       display: none;
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
-      color: #9a3412;
-      padding: 13px;
-      border-radius: 14px;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 12% 20%, rgba(255,255,255,0.95), transparent 22%),
+        radial-gradient(circle at 90% 8%, rgba(254,202,202,0.90), transparent 24%),
+        linear-gradient(135deg, #fff7ed 0%, #fff1f2 42%, #ffffff 100%);
+      border: 1px solid #fbbf24;
+      color: #7f1d1d;
+      padding: 18px 22px;
+      border-radius: 22px;
       margin-bottom: 18px;
       font-weight: bold;
+      box-shadow: 0 18px 35px rgba(127,29,29,0.18), inset 0 1px 0 rgba(255,255,255,0.92);
+      transform-style: preserve-3d;
+      animation: birthdayGlow 2.6s ease-in-out infinite alternate;
+    }
+
+    .birthday-box::before,
+    .birthday-box::after {
+      content: "🎉 ✨ 🎂 🎈 ✨ 🎉";
+      position: absolute;
+      left: -8px;
+      right: -8px;
+      color: rgba(185,28,28,0.13);
+      font-size: 30px;
+      letter-spacing: 14px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .birthday-box::before { top: 6px; }
+    .birthday-box::after { bottom: 4px; transform: rotate(180deg); }
+
+    .birthday-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .birthday-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 22px;
+      color: #7f1d1d;
+      text-shadow: 0 2px 0 rgba(255,255,255,0.90);
+    }
+
+    .birthday-names {
+      font-size: 20px;
+      color: #991b1b;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(248,113,113,0.35);
+      border-radius: 999px;
+      padding: 9px 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 18px rgba(127,29,29,0.10);
+    }
+
+    .party-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #dc2626, #f59e0b);
+      color: #fff;
+      box-shadow: 0 10px 18px rgba(220,38,38,0.30);
+      animation: partyBounce 1.4s ease-in-out infinite;
+    }
+
+    .birthday-confetti {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .birthday-confetti span {
+      position: absolute;
+      top: -12px;
+      width: 9px;
+      height: 14px;
+      border-radius: 3px;
+      background: #dc2626;
+      opacity: 0.78;
+      animation: confettiFall 3.4s linear infinite;
+    }
+
+    .birthday-confetti span:nth-child(2n) { background: #f59e0b; }
+    .birthday-confetti span:nth-child(3n) { background: #16a34a; }
+    .birthday-confetti span:nth-child(4n) { background: #2563eb; }
+    .birthday-confetti span:nth-child(1) { left: 6%; animation-delay: 0s; }
+    .birthday-confetti span:nth-child(2) { left: 17%; animation-delay: .35s; }
+    .birthday-confetti span:nth-child(3) { left: 29%; animation-delay: .7s; }
+    .birthday-confetti span:nth-child(4) { left: 41%; animation-delay: .15s; }
+    .birthday-confetti span:nth-child(5) { left: 53%; animation-delay: .55s; }
+    .birthday-confetti span:nth-child(6) { left: 65%; animation-delay: .95s; }
+    .birthday-confetti span:nth-child(7) { left: 77%; animation-delay: .25s; }
+    .birthday-confetti span:nth-child(8) { left: 88%; animation-delay: .8s; }
+
+    @keyframes birthdayGlow {
+      from { box-shadow: 0 18px 35px rgba(127,29,29,0.15), inset 0 1px 0 rgba(255,255,255,0.92); }
+      to { box-shadow: 0 22px 44px rgba(220,38,38,0.28), inset 0 1px 0 rgba(255,255,255,0.96); }
+    }
+
+    @keyframes partyBounce {
+      0%, 100% { transform: translateY(0) rotate(-5deg); }
+      50% { transform: translateY(-5px) rotate(6deg); }
+    }
+
+    @keyframes confettiFall {
+      0% { transform: translateY(-15px) rotate(0deg); opacity: 0; }
+      12% { opacity: .9; }
+      100% { transform: translateY(105px) rotate(360deg); opacity: 0; }
     }
 
     .tabs {
@@ -1878,7 +1990,7 @@
     <div class="nav">
       <div class="brand">
 <div class="brand-title">
-          <h1>MAF Student Server</h1>
+          <h1>MAF Server</h1>
           <span>Discipline Today, FCA Tomorrow</span>
         </div>
       </div>
@@ -1899,11 +2011,11 @@
 
     <section class="hero">
       <div>
-        <h2>CA Student Directory</h2>
+        <h2>CA Directory</h2>
         <div class="btn-row"><button class="light" onclick="refreshAll()">Refresh</button></div>
       </div>
       <div class="hero-box">
-        <span>Total Student Profiles</span>
+        <span>Total Profiles</span>
         <strong id="heroNumber">0</strong>
       </div>
     </section>
@@ -1911,19 +2023,19 @@
     <div id="birthdayBox" class="birthday-box"></div>
 
     <div class="tabs">
-      <button class="tab-btn active" data-tab="publicTab" onclick="openTab('publicTab', this)">Student Profiles</button>
+      <button class="tab-btn active" data-tab="publicTab" onclick="openTab('publicTab', this)">Profiles</button>
       <button class="tab-btn hidden" id="studentTabBtn" data-tab="studentTab" onclick="openTab('studentTab', this)">My Profile</button>
-      <button class="tab-btn hidden" id="fundTabBtn" data-tab="fundTab" onclick="openTab('fundTab', this)">Student Fund</button>
-      <button class="tab-btn hidden" id="dataTabBtn" data-tab="dataTab" onclick="openTab('dataTab', this)">Student Data Manager</button>
+      <button class="tab-btn hidden" id="fundTabBtn" data-tab="fundTab" onclick="openTab('fundTab', this)">Fund</button>
+      <button class="tab-btn hidden" id="dataTabBtn" data-tab="dataTab" onclick="openTab('dataTab', this)">Data Manager</button>
       <button class="tab-btn hidden" id="masterTabBtn" data-tab="masterTab" onclick="openTab('masterTab', this)">Master Account</button>
     </div>
 
     <section id="publicTab" class="tab active">
       <div class="account-open-box">
-        <h2>Open Student Account</h2>
+        <h2>Open Account</h2>
 
         <button id="studentAccountRequestToggleBtn" onclick="openStudentAccountRequestModal()">
-          Open Student Account Form
+          Open Account Form
         </button>
       </div>
 
@@ -1931,14 +2043,14 @@
         <div class="modal-panel">
           <div class="modal-header">
             <div>
-              <h2>Open Student Account</h2>
+              <h2>Open Account</h2>
             </div>
             <button class="modal-close" onclick="closeStudentAccountRequestModal()">×</button>
           </div>
 
           <div class="form-grid">
-            <div><label>Full Name</label><input id="reqFullName" placeholder="Student full name"></div>
-            <div><label>Student Personal Email / Login Email</label><input type="email" id="reqPersonalEmail" placeholder="student@email.com"></div>
+            <div><label>Full Name</label><input id="reqFullName" placeholder="Full name"></div>
+            <div><label>Personal Email / Login Email</label><input type="email" id="reqPersonalEmail" placeholder="student@email.com"></div>
             <div><label>Requested Login Password</label><input id="reqPassword" placeholder="Example: st123456"></div>
             <div><label>Photo URL</label><input id="reqPhotoUrl" placeholder="Optional direct photo link"></div>
             <div><label>Designation</label><select id="reqDesignation">
@@ -2006,7 +2118,7 @@
       <div id="publicProfileModal" class="modal-overlay" onclick="closeModalOnBackdrop(event, 'publicProfileModal')">
         <div class="modal-panel">
           <div class="modal-header">
-            <h2>Student Full Profile</h2>
+            <h2>Full Profile</h2>
             <button class="modal-close" onclick="closePublicProfileModal()">×</button>
           </div>
           <div id="publicProfileModalContent"></div>
@@ -2014,8 +2126,8 @@
       </div>
 
       <div class="card">
-        <h2>All Student Profiles</h2>
-        <input class="search" id="publicSearch" placeholder="Search student..." oninput="renderPublicStudents()">
+        <h2>All Profiles</h2>
+        <input class="search" id="publicSearch" placeholder="Search..." oninput="renderPublicStudents()">
         <div id="publicStudentList"></div>
       </div>
     </section>
@@ -2024,7 +2136,7 @@
 
     <section id="fundTab" class="tab">
       <div class="cards">
-        <div class="card stat"><h3>Student Opening Balance</h3><div class="value" id="totalOpeningBalance">0.00</div></div>
+        <div class="card stat"><h3>Opening Balance</h3><div class="value" id="totalOpeningBalance">0.00</div></div>
         <div class="card stat"><h3>Cash in Hand Opening</h3><div class="value" id="totalCashInHandOpening">0.00</div></div>
         <div class="card stat"><h3>Total Due</h3><div class="value" id="totalDueBalance">0.00</div></div>
         <div class="card stat"><h3>Total Received</h3><div class="value" id="totalReceivedBalance">0.00</div></div>
@@ -2077,7 +2189,7 @@
       </div>
 
       <div id="openingBalanceManager" class="card hidden">
-        <h2>Add / Update Student Opening Balance</h2>
+        <h2>Add / Update Opening Balance</h2>
         <div class="form-grid">
           <div><label>Fund Name</label><select id="openingFund"></select></div>
           <div><label>Student</label><select id="openingStudent"></select></div>
@@ -2092,9 +2204,9 @@
       </div>
 
       <div class="card">
-        <h2>Student Opening Balance List</h2>
+        <h2>Opening Balance List</h2>
         <table>
-          <thead><tr><th>Fund</th><th>Student</th><th>Opening Balance</th><th>Remarks</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>Fund</th><th>Name</th><th>Opening Balance</th><th>Remarks</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="openingBalanceTable"></tbody>
         </table>
       </div>
@@ -2137,7 +2249,7 @@
         </div>
 
         <div class="card">
-          <h2>Receive Student Fund</h2>
+          <h2>Receive Fund</h2>
           <div class="form-grid">
             <div><label>Fund Name</label><select id="paymentFund"></select></div>
             <div><label>Student</label><select id="paymentStudent"></select></div>
@@ -2190,7 +2302,7 @@
         <h2>Receivable List</h2>
         <input class="search" id="receivableSearch" placeholder="Search receivable..." oninput="renderFundTables()">
         <table>
-          <thead><tr><th>Fund</th><th>Student</th><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Paid At</th></tr></thead>
+          <thead><tr><th>Fund</th><th>Name</th><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Paid At</th></tr></thead>
           <tbody id="receivableTable"></tbody>
         </table>
       </div>
@@ -2199,7 +2311,7 @@
         <h2>Received Fund History</h2>
         <input class="search" id="paymentSearch" placeholder="Search received fund..." oninput="renderFundTables()">
         <table>
-          <thead><tr><th>Fund</th><th>Student</th><th>Description</th><th>Amount</th><th>Payment Date</th><th>Method</th><th>Reference</th><th>Note</th></tr></thead>
+          <thead><tr><th>Fund</th><th>Name</th><th>Description</th><th>Amount</th><th>Payment Date</th><th>Method</th><th>Reference</th><th>Note</th></tr></thead>
           <tbody id="paymentTable"></tbody>
         </table>
       </div>
@@ -2216,28 +2328,28 @@
 
     <section id="dataTab" class="tab">
       <div class="card">
-        <h2>Student Data Manager</h2>
+        <h2>Data Manager</h2>
 
         <div class="data-action-grid">
           <div class="data-action-card">
-            <h3>Add Student Data</h3>
-            <button onclick="openAddStudentModal()">Add Student</button>
+            <h3>Add Data</h3>
+            <button onclick="openAddStudentModal()">Add</button>
           </div>
 
           <div class="data-action-card">
-            <h3>Review Student Requests</h3>
+            <h3>Review Requests</h3>
             <button class="warning" onclick="scrollToDataManagerRequests()">Go to Review List</button>
           </div>
 
           <div class="data-action-card">
-            <h3>Student Data List</h3>
-            <button class="dark" onclick="scrollToStudentDataList()">Go to Student List</button>
+            <h3>Data List</h3>
+            <button class="dark" onclick="scrollToStudentDataList()">Go to List</button>
           </div>
         </div>
       </div>
 
       <div class="card" id="accountReviewListCard">
-        <h2>Student Account Requests - Data Manager Review</h2>
+        <h2>Account Requests - Data Manager Review</h2>
         <table>
           <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Branch</th><th>Status</th><th>Assigned ID</th><th>Action</th></tr></thead>
           <tbody id="reviewRequestTable"></tbody>
@@ -2247,7 +2359,7 @@
       <div class="card" id="caUpdateApprovalCard">
         <h2>CA Status Update Requests - Data Manager Approval</h2>
         <table>
-          <thead><tr><th>Date</th><th>Student</th><th>Current CA Level</th><th>Requested CA Level</th><th>Current Result</th><th>Requested Result</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>Date</th><th>Name</th><th>Current CA Level</th><th>Requested CA Level</th><th>Current Result</th><th>Requested Result</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="caUpdateRequestTable"></tbody>
         </table>
       </div>
@@ -2255,9 +2367,9 @@
       <div class="card" id="studentDataListCard">
         <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
           <div>
-            <h2>Student Data List</h2>
+            <h2>Data List</h2>
           </div>
-          <button onclick="openAddStudentModal()">Add Student</button>
+          <button onclick="openAddStudentModal()">Add</button>
         </div>
 
         <input class="search" id="dataSearch" placeholder="Search student data..." oninput="renderDataManagerList()">
@@ -2270,7 +2382,7 @@
       <div id="reviewRequestModal" class="modal-overlay hidden">
         <div class="modal-panel">
           <div class="modal-header">
-            <h2>Review Student Account Request</h2>
+            <h2>Review Account Request</h2>
             <button class="modal-close" onclick="closeReviewRequestModal()">Close</button>
           </div>
 
@@ -2278,12 +2390,12 @@
 
             <div class="form-grid">
               <div><label>Request ID</label><input id="reviewRequestId" readonly placeholder="Load a request first"></div>
-              <div><label>Assigned Student ID</label><input id="reviewAssignedStudentId" placeholder="Example: ST-001"></div>
+              <div><label>Assigned ID</label><input id="reviewAssignedStudentId" placeholder="Example: ST-001"></div>
               <div><label>Review Note</label><input id="reviewNote" placeholder="Checked and recommended for approval"></div>
             </div>
 
             <div id="reviewRequestDetailsBox" class="request-details-box">
-              <h3>Submitted Student Details</h3>
+              <h3>Submitted Details</h3>
               <div id="reviewRequestDetails"></div>
             </div>
 
@@ -2299,7 +2411,7 @@
       <div id="studentFormModal" class="modal-overlay hidden">
         <div class="modal-panel">
           <div class="modal-header">
-            <h2 id="studentFormModalTitle">Add / Edit Student Data</h2>
+            <h2 id="studentFormModalTitle">Add / Edit Data</h2>
             <button class="modal-close" onclick="closeStudentFormModal()">Close</button>
           </div>
 
@@ -2307,8 +2419,8 @@
 
             <input type="hidden" id="editingStudentId">
             <div class="form-grid">
-              <div><label>Student ID</label><input id="studentId" placeholder="Example: ST-001"></div>
-              <div><label>Full Name</label><input id="fullName" placeholder="Student full name"></div>
+              <div><label>ID</label><input id="studentId" placeholder="Example: ST-001"></div>
+              <div><label>Full Name</label><input id="fullName" placeholder="Full name"></div>
               <div><label>Photo URL</label><input id="photoUrl" placeholder="Paste photo direct URL here"></div>
               <div><label>Designation</label><select id="designation">
               <option value="">Select Designation</option>
@@ -2356,7 +2468,7 @@
             </select></div>
               <div><label>Fund Responsibility</label><select id="fundResponsibility"><option>Student</option><option>Fund Manager</option><option>Assistant Fund Manager</option></select></div>
               <div><label>Status</label><select id="studentStatus"><option>Active</option><option>Inactive</option></select></div>
-              <div class="master-credential-field"><label>Student Personal Email / Login Email</label><input type="email" id="studentLoginEmail" placeholder="student@email.com"></div>
+              <div class="master-credential-field"><label>Personal Email / Login Email</label><input type="email" id="studentLoginEmail" placeholder="student@email.com"></div>
               <div class="master-credential-field"><label>Temporary Login Password</label><input id="studentTempPassword" placeholder="Example: st123456"></div>
               <div><label>Private Phone</label><input id="privatePhone"></div>
               <div><label>Private Email</label><input id="privateEmail"></div>
@@ -2367,7 +2479,7 @@
             <br>
             <label>Private Notes</label><textarea id="privateNotes"></textarea>
             <div class="btn-row">
-              <button onclick="saveStudent()">Save Student</button>
+              <button onclick="saveStudent()">Save</button>
               <button class="dark" onclick="clearStudentForm()">Clear</button>
               <button class="light" onclick="closeStudentFormModal()">Close Panel</button>
             </div>
@@ -2378,7 +2490,7 @@
 
     <section id="masterTab" class="tab">
       <div class="card">
-        <h2>Student Account Approval - Master</h2>
+        <h2>Account Approval - Master</h2>
 <table>
           <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Temporary Password</th><th>CC Complete Date</th><th>Assigned ID</th><th>Review Note</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="masterRequestTable"></tbody>
@@ -2386,9 +2498,9 @@
       </div>
 
       <div class="card">
-        <h2>Student Login Credentials</h2>
+        <h2>Login Credentials</h2>
 <table>
-          <thead><tr><th>Student ID</th><th>Student Name</th><th>Login Email</th><th>Temporary Password</th><th>Role</th><th>Status</th><th>Created At</th><th>Action</th></tr></thead>
+          <thead><tr><th>ID</th><th>Name</th><th>Login Email</th><th>Temporary Password</th><th>Role</th><th>Status</th><th>Created At</th><th>Action</th></tr></thead>
           <tbody id="credentialTable"></tbody>
         </table>
       </div>
@@ -2396,7 +2508,7 @@
       <div class="card">
         <h2>Login User / Role List</h2>
         <table>
-          <thead><tr><th>User Email</th><th>Name</th><th>Student ID</th><th>Role</th><th>Status</th></tr></thead>
+          <thead><tr><th>User Email</th><th>Name</th><th>ID</th><th>Role</th><th>Status</th></tr></thead>
           <tbody id="profileUserTable"></tbody>
         </table>
       </div>
@@ -2407,14 +2519,14 @@
   <div id="credentialEditModal" class="modal-overlay hidden" onclick="closeModalOnBackdrop(event, 'credentialEditModal')">
     <div class="modal-panel credential-edit-panel">
       <div class="modal-header">
-        <h2>Student Login Credential</h2>
+        <h2>Login Credential</h2>
         <button class="modal-close" onclick="closeCredentialEditModal()">×</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="credentialEditId">
         <div class="form-grid">
           <div>
-            <label>Student ID</label>
+            <label>ID</label>
             <input id="credentialStudentId" readonly>
           </div>
           <div>
@@ -2448,7 +2560,7 @@
   <div id="masterStudentProfileModal" class="modal-overlay hidden" onclick="closeModalOnBackdrop(event, 'masterStudentProfileModal')">
     <div class="modal-panel">
       <div class="modal-header">
-        <h2 id="masterStudentProfileModalTitle">Student Profile Details</h2>
+        <h2 id="masterStudentProfileModalTitle">Profile Details</h2>
         <button class="modal-close" onclick="closeMasterStudentProfileModal()">×</button>
       </div>
       <div class="modal-body">
@@ -2589,7 +2701,17 @@
       const day = today.getDate();
       const birthdayStudents = students.filter(s => Number(s.birth_month) === month && Number(s.birth_day) === day);
       if (birthdayStudents.length === 0) { box.style.display = "none"; box.innerHTML = ""; return; }
-      box.innerHTML = "Today's Birthday: " + birthdayStudents.map(s => escapeHtml(s.full_name)).join(", ");
+      const birthdayNames = birthdayStudents.map(s => escapeHtml(s.full_name)).join(", ");
+      box.innerHTML = `
+        <div class="birthday-confetti" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="birthday-content">
+          <div class="birthday-title"><span class="party-badge">🎂</span> Birthday Celebration Today</div>
+          <div class="birthday-names">🎉 ${birthdayNames} 🎈</div>
+        </div>
+      `;
       box.style.display = "block";
     }
 
@@ -2614,7 +2736,7 @@
       const s = students.find(item => item.student_id === studentId);
 
       if (!s) {
-        showMessage("Student profile not found.", "error");
+        showMessage("Profile not found.", "error");
         return;
       }
 
@@ -2622,7 +2744,7 @@
         <div class="full-profile-card">
           <div class="full-profile-header">
             <div class="full-profile-photo">${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}</div>
-            <div><h2 class="full-profile-name">${escapeHtml(s.full_name)}</h2><div class="full-profile-subtitle">CA Student Profile | M A Fazal & Co., Chartered Accountants</div></div>
+            <div><h2 class="full-profile-name">${escapeHtml(s.full_name)}</h2><div class="full-profile-subtitle">CA Profile | M A Fazal & Co., Chartered Accountants</div></div>
           </div>
           <div class="full-profile-details">
             <div class="info"><span>Student ID</span><strong>${escapeHtml(s.student_id)}</strong></div>
@@ -2887,7 +3009,7 @@
       const paymentResult = await db.from("payments").select("*").eq("student_id", studentId).order("created_at", { ascending: false });
 
       if (publicResult.error || !publicResult.data) {
-        return "<div class='notice'>Student profile not found.</div>";
+        return "<div class='notice'>Profile not found.</div>";
       }
 
       const pub = publicResult.data || {};
@@ -3050,7 +3172,7 @@
       if (!modal || !body) return;
 
       const student = students.find(s => s.student_id === studentId);
-      if (title) title.textContent = student ? `Student Profile Details - ${student.full_name}` : "Student Profile Details";
+      if (title) title.textContent = student ? `Profile Details - ${student.full_name}` : "Profile Details";
 
       body.innerHTML = "<div class='notice'>Loading student profile details...</div>";
       modal.classList.remove("hidden");
@@ -3395,7 +3517,7 @@
       let serial = 1;
       const receiptHtml = receivedRows.map(p => `<tr><td>${serial++}</td><td>Received</td><td>${escapeHtml(p.student_id)} - ${escapeHtml(p.student_name)}</td><td>${escapeHtml(p.description)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.reference_no)}</td><td class="amount-cell">${money(p.amount)}</td><td class="amount-cell">-</td></tr>`).join("");
       const paymentHtml = paymentRows.map(e => `<tr><td>${serial++}</td><td>Payment</td><td>${escapeHtml(e.payee_name)}</td><td>${escapeHtml(e.description)}</td><td>${escapeHtml(e.method)}</td><td>${escapeHtml(e.reference_no)}</td><td class="amount-cell">-</td><td class="amount-cell">${money(e.amount)}</td></tr>`).join("");
-      const html = printHeader("Student Fund Voucher") + `
+      const html = printHeader("Fund Voucher") + `
         <div class="print-meta">
           <div><strong>Voucher No:</strong> ${escapeHtml(voucherNo)}</div><div><strong>Date:</strong> ${escapeHtml(date)}</div>
           <div><strong>Fund Name:</strong> ${escapeHtml(fundName)}</div><div><strong>Voucher Type:</strong> ${escapeHtml(type)}</div>
@@ -3433,7 +3555,7 @@
         const due = opening + monthlyReceivable - monthlyPaid;
         return `<tr><td>${sl++}</td><td>${escapeHtml(s.student_id)}</td><td>${escapeHtml(s.full_name)}</td><td>${escapeHtml(s.designation)}</td><td class="amount-cell">${money(opening)}</td><td class="amount-cell">${money(monthlyReceivable)}</td><td class="amount-cell">${money(monthlyPaid)}</td><td class="amount-cell">${money(due)}</td><td style="height:30px;"></td></tr>`;
       }).join("");
-      const html = printHeader("Monthly Student Fund Payment Sheet") + `
+      const html = printHeader("Monthly Fund Payment Sheet") + `
         <div class="print-meta">
           <div><strong>Month:</strong> ${escapeHtml(monthValue)}</div><div><strong>Fund Name:</strong> ${escapeHtml(fundName)}</div>
         </div>
@@ -3449,7 +3571,7 @@
             <col style="width:10%;">
             <col style="width:10%;">
           </colgroup>
-          <thead><tr><th>SL</th><th>Student ID</th><th>Name</th><th>Designation</th><th class="amount-cell">Opening</th><th class="amount-cell">Monthly Due</th><th class="amount-cell">Paid</th><th class="amount-cell">Balance</th><th>Signature</th></tr></thead>
+          <thead><tr><th>SL</th><th>ID</th><th>Name</th><th>Designation</th><th class="amount-cell">Opening</th><th class="amount-cell">Monthly Due</th><th class="amount-cell">Paid</th><th class="amount-cell">Balance</th><th>Signature</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
         ${signatureBlock()}`;
@@ -3923,7 +4045,7 @@
       });
       renderCredentialTable();
       renderMasterRequestTable();
-      showMessage("Student account approved. Now create the same email/password as an Auth user in Supabase and link profile role as student.", "success");
+      showMessage("Account approved. Now create the same email/password as an Auth user in Supabase and link profile role as student.", "success");
     }
 
     async function rejectStudentAccountRequest(requestId) {
@@ -4024,8 +4146,8 @@
       document.getElementById("privateAddress").value = priv.address || "";
       document.getElementById("privateNotes").value = priv.notes || "";
       openTabById("dataTab");
-      openStudentFormModal("Edit Student Data");
-      showMessage("Student loaded for editing.", "success");
+      openStudentFormModal("Edit Data");
+      showMessage("Profile loaded for editing.", "success");
     }
 
     async function saveStudent() {
@@ -4053,7 +4175,7 @@
       await loadPublicStudents();
       await loadStudentDataManager();
       if (currentProfile && currentProfile.role === "master") await loadMasterData();
-      showMessage("Student saved successfully.", "success");
+      showMessage("Profile saved successfully.", "success");
     }
 
     async function deactivateStudent(studentId) {
@@ -4065,7 +4187,7 @@
       await loadPublicStudents();
       await loadStudentDataManager();
       if (currentProfile && currentProfile.role === "master") await loadMasterData();
-      showMessage("Student deactivated.", "success");
+      showMessage("Profile deactivated.", "success");
     }
 
     function clearStudentForm() {
@@ -4212,7 +4334,7 @@
       const titleBox = document.getElementById("studentFormModalTitle");
 
       if (!modal) return;
-      if (titleBox) titleBox.textContent = title || "Add / Edit Student Data";
+      if (titleBox) titleBox.textContent = title || "Add / Edit Data";
       applyMasterCredentialFieldVisibility();
 
       modal.classList.remove("hidden");
@@ -4233,7 +4355,7 @@
 
     function openAddStudentModal() {
       clearStudentForm();
-      openStudentFormModal("Add Student Data");
+      openStudentFormModal("Add Data");
     }
 
     function openReviewRequestModal() {
@@ -4361,7 +4483,7 @@
         await loadMasterData();
       }
 
-      showMessage("Student deleted successfully.", "success");
+      showMessage("Profile deleted successfully.", "success");
     }
 
   </script>
