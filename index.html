@@ -2029,6 +2029,7 @@
         <div class="card stat"><h3>Total Due</h3><div class="value" id="totalDueBalance">0.00</div></div>
         <div class="card stat"><h3>Total Received</h3><div class="value" id="totalReceivedBalance">0.00</div></div>
         <div class="card stat"><h3>Total Payment</h3><div class="value" id="totalPaymentBalance">0.00</div></div>
+        <div class="card stat"><h3>Fund Remaining Balance</h3><div class="value" id="fundRemainingBalance">0.00</div></div>
       </div>
 
       <div id="fundNameManager" class="card hidden">
@@ -3286,12 +3287,15 @@
       const unpaidReceivable = receivables.filter(r => r.status !== "Paid").reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const totalReceived = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
       const totalExpense = fundPayments.filter(e => e.status === "Active").reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      const fundRemaining = totalCashInHandOpening + totalReceived - totalExpense;
       document.getElementById("totalOpeningBalance").textContent = money(totalOpening);
       const cashOpeningEl = document.getElementById("totalCashInHandOpening");
       if (cashOpeningEl) cashOpeningEl.textContent = money(totalCashInHandOpening);
       document.getElementById("totalDueBalance").textContent = money(totalOpening + unpaidReceivable);
       document.getElementById("totalReceivedBalance").textContent = money(totalReceived);
       document.getElementById("totalPaymentBalance").textContent = money(totalExpense);
+      const remainingEl = document.getElementById("fundRemainingBalance");
+      if (remainingEl) remainingEl.textContent = money(fundRemaining);
     }
 
     function renderFundTables() {
