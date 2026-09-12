@@ -1770,6 +1770,55 @@
       }
     }
 
+
+    /* FINAL FIX: visible login email/status/password colors */
+    #loginStatus.badge {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+      color: #7f1d1d !important;
+      border: 1px solid rgba(255,255,255,0.85) !important;
+      text-shadow: none !important;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,1) !important;
+    }
+
+    #loginEmail,
+    #loginPassword {
+      background: rgba(255,255,255,0.16) !important;
+      color: #ffffff !important;
+      border-color: rgba(255,255,255,0.50) !important;
+      text-shadow: none !important;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.15) !important;
+    }
+
+    #loginEmail::placeholder,
+    #loginPassword::placeholder {
+      color: #ffe4e6 !important;
+      opacity: 1 !important;
+    }
+
+    #loginEmail:focus,
+    #loginPassword:focus {
+      border-color: #ffffff !important;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.14), inset 0 1px 3px rgba(0,0,0,0.18) !important;
+    }
+
+    .credential-email-cell {
+      color: #7f1d1d;
+      font-weight: 800;
+    }
+
+    .credential-password-cell {
+      color: #111827;
+      font-weight: 900;
+      background: #fff7ed;
+      border-radius: 8px;
+      padding: 4px 8px;
+      display: inline-block;
+    }
+
+    .credential-edit-panel .form-grid {
+      margin-top: 6px;
+    }
+
   </style>
 </head>
 
@@ -1859,6 +1908,7 @@
             </select></div>
             <div><label>CA Result Summary</label><select id="reqCaResults">
               <option value="">Select Subject Pass Summary</option>
+              <option>0 Subjects Passed</option>
               <option>1 Subject Passed</option>
               <option>2 Subjects Passed</option>
               <option>3 Subjects Passed</option>
@@ -2218,6 +2268,7 @@
             </select></div>
               <div><label>CA Result Summary</label><select id="caResults">
               <option value="">Select Subject Pass Summary</option>
+              <option>0 Subjects Passed</option>
               <option>1 Subject Passed</option>
               <option>2 Subjects Passed</option>
               <option>3 Subjects Passed</option>
@@ -2245,8 +2296,8 @@
             </select></div>
               <div><label>Fund Responsibility</label><select id="fundResponsibility"><option>Student</option><option>Fund Manager</option><option>Assistant Fund Manager</option></select></div>
               <div><label>Status</label><select id="studentStatus"><option>Active</option><option>Inactive</option></select></div>
-              <div><label>Student Personal Email / Login Email</label><input type="email" id="studentLoginEmail" placeholder="student@email.com"></div>
-              <div><label>Temporary Login Password</label><input id="studentTempPassword" placeholder="Example: st123456"></div>
+              <div class="master-credential-field"><label>Student Personal Email / Login Email</label><input type="email" id="studentLoginEmail" placeholder="student@email.com"></div>
+              <div class="master-credential-field"><label>Temporary Login Password</label><input id="studentTempPassword" placeholder="Example: st123456"></div>
               <div><label>Private Phone</label><input id="privatePhone"></div>
               <div><label>Private Email</label><input id="privateEmail"></div>
               <div><label>Birth Date</label><input type="date" id="birthDate"></div>
@@ -2277,7 +2328,7 @@
       <div class="card">
         <h2>Student Login Credentials</h2>
 <table>
-          <thead><tr><th>Student ID</th><th>Student Name</th><th>Login Email</th><th>Temporary Password</th><th>Role</th><th>Status</th><th>Created At</th></tr></thead>
+          <thead><tr><th>Student ID</th><th>Student Name</th><th>Login Email</th><th>Temporary Password</th><th>Role</th><th>Status</th><th>Created At</th><th>Action</th></tr></thead>
           <tbody id="credentialTable"></tbody>
         </table>
       </div>
@@ -2291,6 +2342,48 @@
       </div>
     </section>
   </main>
+
+
+  <div id="credentialEditModal" class="modal-overlay hidden" onclick="closeModalOnBackdrop(event, 'credentialEditModal')">
+    <div class="modal-panel credential-edit-panel">
+      <div class="modal-header">
+        <h2>Student Login Credential</h2>
+        <button class="modal-close" onclick="closeCredentialEditModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="credentialEditId">
+        <div class="form-grid">
+          <div>
+            <label>Student ID</label>
+            <input id="credentialStudentId" readonly>
+          </div>
+          <div>
+            <label>Student Name</label>
+            <input id="credentialStudentName">
+          </div>
+          <div>
+            <label>Login Email</label>
+            <input type="email" id="credentialLoginEmail">
+          </div>
+          <div>
+            <label>Temporary Password</label>
+            <input id="credentialTempPassword">
+          </div>
+          <div>
+            <label>Status</label>
+            <select id="credentialStatus">
+              <option>Active</option>
+              <option>Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button onclick="saveCredentialUpdate()">Save Credential</button>
+          <button class="light" onclick="closeCredentialEditModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="masterStudentProfileModal" class="modal-overlay hidden" onclick="closeModalOnBackdrop(event, 'masterStudentProfileModal')">
     <div class="modal-panel">
@@ -2394,6 +2487,7 @@
       document.getElementById("loginForm").classList.remove("hidden");
       document.getElementById("logoutBtn").classList.add("hidden");
       hideRoleTabs();
+      applyMasterCredentialFieldVisibility();
       openTabById("publicTab");
     }
 
@@ -3759,7 +3853,118 @@
 
     function renderCredentialTable() {
       const tbody = document.getElementById("credentialTable");
-      tbody.innerHTML = studentCredentials.length ? studentCredentials.map(c => `<tr><td>${escapeHtml(c.student_id)}</td><td>${escapeHtml(c.student_name)}</td><td>${escapeHtml(c.login_email)}</td><td><strong>${escapeHtml(c.temporary_password)}</strong></td><td>${escapeHtml(c.role)}</td><td>${escapeHtml(c.status)}</td><td>${escapeHtml(formatDate(c.created_at))}</td></tr>`).join("") : "<tr><td colspan='7'>No student login credential found.</td></tr>";
+      if (!tbody) return;
+
+      if (!studentCredentials.length) {
+        tbody.innerHTML = "<tr><td colspan='8'>No student login credential found.</td></tr>";
+        return;
+      }
+
+      tbody.innerHTML = studentCredentials.map(function (c) {
+        return `
+          <tr>
+            <td>${escapeHtml(c.student_id)}</td>
+            <td>${escapeHtml(c.student_name)}</td>
+            <td><span class="credential-email-cell">${escapeHtml(c.login_email)}</span></td>
+            <td><span class="credential-password-cell">${escapeHtml(c.temporary_password)}</span></td>
+            <td>${escapeHtml(c.role)}</td>
+            <td>${escapeHtml(c.status)}</td>
+            <td>${escapeHtml(formatDate(c.created_at))}</td>
+            <td><button class="warning" onclick="openCredentialEditModal('${escapeAttribute(c.id)}')">Check / Change</button></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+
+    function applyMasterCredentialFieldVisibility() {
+      const isMaster = currentProfile && currentProfile.role === "master";
+      document.querySelectorAll(".master-credential-field").forEach(function (field) {
+        if (isMaster) {
+          field.classList.remove("hidden");
+        } else {
+          field.classList.add("hidden");
+        }
+      });
+    }
+
+    function openCredentialEditModal(credentialId) {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can check or change student login credentials.", "error");
+        return;
+      }
+
+      const c = studentCredentials.find(function (item) {
+        return String(item.id) === String(credentialId);
+      });
+
+      if (!c) {
+        showMessage("Credential record not found.", "error");
+        return;
+      }
+
+      document.getElementById("credentialEditId").value = c.id || "";
+      document.getElementById("credentialStudentId").value = c.student_id || "";
+      document.getElementById("credentialStudentName").value = c.student_name || "";
+      document.getElementById("credentialLoginEmail").value = c.login_email || "";
+      document.getElementById("credentialTempPassword").value = c.temporary_password || "";
+      document.getElementById("credentialStatus").value = c.status || "Active";
+
+      const modal = document.getElementById("credentialEditModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("show");
+      document.body.classList.add("modal-open-body");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeCredentialEditModal() {
+      const modal = document.getElementById("credentialEditModal");
+      if (modal) {
+        modal.classList.remove("show");
+        modal.classList.add("hidden");
+      }
+      document.body.classList.remove("modal-open-body");
+      document.body.style.overflow = "";
+    }
+
+    async function saveCredentialUpdate() {
+      if (!currentProfile || currentProfile.role !== "master") {
+        showMessage("Only Master Account can change student login credentials.", "error");
+        return;
+      }
+
+      const id = document.getElementById("credentialEditId").value;
+      const studentId = document.getElementById("credentialStudentId").value.trim();
+      const studentName = document.getElementById("credentialStudentName").value.trim();
+      const loginEmail = document.getElementById("credentialLoginEmail").value.trim();
+      const tempPassword = document.getElementById("credentialTempPassword").value.trim();
+      const status = document.getElementById("credentialStatus").value;
+
+      if (!id || !studentId || !studentName || !loginEmail || !tempPassword) {
+        showMessage("Student ID, name, login email and temporary password are required.", "error");
+        return;
+      }
+
+      const result = await db
+        .from("student_login_credentials")
+        .update({
+          student_name: studentName,
+          login_email: loginEmail,
+          temporary_password: tempPassword,
+          status: status,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+      if (result.error) {
+        showMessage("Credential update failed: " + result.error.message, "error");
+        return;
+      }
+
+      await loadStudentCredentials();
+      renderCredentialTable();
+      closeCredentialEditModal();
+      showMessage("Student login credential updated successfully.", "success");
     }
 
     function renderMasterProfiles() {
@@ -3773,6 +3978,7 @@
 
       if (!modal) return;
       if (titleBox) titleBox.textContent = title || "Add / Edit Student Data";
+      applyMasterCredentialFieldVisibility();
 
       modal.classList.remove("hidden");
       modal.classList.add("show");
