@@ -2243,6 +2243,14 @@
         </table>
       </div>
 
+      <div class="card" id="caUpdateApprovalCard">
+        <h2>CA Status Update Requests - Data Manager Approval</h2>
+        <table>
+          <thead><tr><th>Date</th><th>Student</th><th>Current CA Level</th><th>Requested CA Level</th><th>Current Result</th><th>Requested Result</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="caUpdateRequestTable"></tbody>
+        </table>
+      </div>
+
       <div class="card" id="studentDataListCard">
         <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
           <div>
@@ -2467,6 +2475,7 @@
     let openingBalances = [];
     let cashInHandOpeningBalances = [];
     let studentAccountRequests = [];
+    let studentCaUpdateRequests = [];
     let funds = [];
 
     document.addEventListener("DOMContentLoaded", init);
@@ -2858,6 +2867,16 @@
       return row ? Number(row.opening_balance || 0) : 0;
     }
 
+    function caLevelOptionsHtml(selected) {
+      const levels = ["", "CL", "PL", "AL", "Complete"];
+      return levels.map(level => `<option value="${escapeHtml(level)}" ${level === selected ? "selected" : ""}>${level || "Select CA Level"}</option>`).join("");
+    }
+
+    function caResultOptionsHtml(selected) {
+      const results = ["", "0 Subjects Passed", "1 Subject Passed", "2 Subjects Passed", "3 Subjects Passed", "4 Subjects Passed", "5 Subjects Passed", "6 Subjects Passed", "7 Subjects Passed", "8 Subjects Passed", "9 Subjects Passed", "10 Subjects Passed", "11 Subjects Passed", "12 Subjects Passed", "13 Subjects Passed", "14 Subjects Passed", "15 Subjects Passed", "16 Subjects Passed", "17 Subjects Passed"];
+      return results.map(result => `<option value="${escapeHtml(result)}" ${result === selected ? "selected" : ""}>${result || "Select Subject Pass Summary"}</option>`).join("");
+    }
+
     async function buildStudentProfileDashboardHtml(studentId) {
       await loadOpeningBalances();
 
@@ -2893,6 +2912,38 @@
         ? pays.map(p => `<tr><td>${escapeHtml(p.fund_name)}</td><td>${escapeHtml(p.description)}</td><td>${money(p.amount)}</td><td>${escapeHtml(p.payment_date)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.note)}</td></tr>`).join("")
         : "<tr><td colspan='6'>No payment found.</td></tr>";
 
+      let myCaUpdateRequests = [];
+      if (currentProfile && currentProfile.role === "student" && currentProfile.student_id === studentId) {
+        const caRequestResult = await db
+          .from("student_ca_update_requests")
+          .select("*")
+          .eq("student_id", studentId)
+          .order("created_at", { ascending: false });
+        myCaUpdateRequests = caRequestResult.error ? [] : (caRequestResult.data || []);
+      }
+
+      const hasPendingCaUpdate = myCaUpdateRequests.some(r => r.status === "Pending");
+      const myCaUpdateRows = myCaUpdateRequests.length
+        ? myCaUpdateRequests.map(r => `<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.requested_ca_level)}</td><td>${escapeHtml(r.requested_ca_results)}</td><td><strong>${escapeHtml(r.status)}</strong></td><td>${escapeHtml(r.review_note)}</td></tr>`).join("")
+        : "<tr><td colspan='5'>No CA update request found.</td></tr>";
+
+      const studentCaEditBox = currentProfile && currentProfile.role === "student" && currentProfile.student_id === studentId
+        ? `<hr style="border:none; border-top:1px solid var(--border); margin:18px 0;">
+            <h3>Request CA Status Update</h3>
+            <div class="form-grid">
+              <div><label>CA Level</label><select id="studentEditCaLevel">${caLevelOptionsHtml(pub.ca_level || "")}</select></div>
+              <div><label>CA Result Summary</label><select id="studentEditCaResults">${caResultOptionsHtml(pub.ca_results || "")}</select></div>
+            </div>
+            <div class="btn-row">
+              <button onclick="updateMyCaStatus()" ${hasPendingCaUpdate ? "disabled" : ""}>Submit for Data Manager Approval</button>
+            </div>
+            <h3>My CA Update Requests</h3>
+            <table>
+              <thead><tr><th>Date</th><th>Requested CA Level</th><th>Requested Result</th><th>Status</th><th>Review Note</th></tr></thead>
+              <tbody>${myCaUpdateRows}</tbody>
+            </table>`
+        : "";
+
       return `
         <div class="profile-grid">
           <div class="card">
@@ -2908,6 +2959,8 @@
             <div class="info"><span>Branch</span><strong>${escapeHtml(pub.branch)}</strong></div>
             <div class="info"><span>Fund Responsibility</span><strong>${escapeHtml(pub.fund_responsibility || "Student")}</strong></div>
             <div class="info"><span>Status</span><strong class="${pub.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(pub.status)}</strong></div>
+
+            ${studentCaEditBox}
 
             <h3>Private Details</h3>
             <div class="info"><span>Phone</span><strong>${escapeHtml(priv.phone)}</strong></div>
@@ -2953,6 +3006,34 @@
       }
 
       document.getElementById("studentDashboard").innerHTML = await buildStudentProfileDashboardHtml(sid);
+    }
+
+    async function updateMyCaStatus() {
+      if (!currentProfile || currentProfile.role !== "student" || !currentProfile.student_id) {
+        showMessage("Only logged-in students can request their own CA status update.", "error");
+        return;
+      }
+
+      const caLevel = document.getElementById("studentEditCaLevel").value;
+      const caResults = document.getElementById("studentEditCaResults").value;
+
+      if (!caLevel || !caResults) {
+        showMessage("Please select both CA Level and CA Result Summary.", "error");
+        return;
+      }
+
+      const result = await db.rpc("submit_my_ca_status_request", {
+        new_ca_level: caLevel,
+        new_ca_results: caResults
+      });
+
+      if (result.error) {
+        showMessage(result.error.message, "error");
+        return;
+      }
+
+      showMessage("CA status update request submitted. Data Manager approval is required.", "success");
+      await loadStudentDashboard();
     }
 
     async function openMasterStudentProfile(studentId) {
@@ -3488,6 +3569,101 @@
       studentAccountRequests = result.data || [];
     }
 
+    async function loadStudentCaUpdateRequests() {
+      const result = await db
+        .from("student_ca_update_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (result.error) {
+        studentCaUpdateRequests = [];
+        return;
+      }
+
+      studentCaUpdateRequests = result.data || [];
+    }
+
+    function renderCaUpdateRequestTable() {
+      const tbody = document.getElementById("caUpdateRequestTable");
+      if (!tbody) return;
+
+      const rows = studentCaUpdateRequests.filter(r => r.status === "Pending");
+
+      tbody.innerHTML = rows.length ? rows.map(r => `
+        <tr>
+          <td>${escapeHtml(formatDate(r.created_at))}</td>
+          <td>${escapeHtml(r.student_id)} - ${escapeHtml(r.student_name)}</td>
+          <td>${escapeHtml(r.current_ca_level)}</td>
+          <td><strong>${escapeHtml(r.requested_ca_level)}</strong></td>
+          <td>${escapeHtml(r.current_ca_results)}</td>
+          <td><strong>${escapeHtml(r.requested_ca_results)}</strong></td>
+          <td><strong>${escapeHtml(r.status)}</strong></td>
+          <td><button class="success" onclick="approveStudentCaUpdateRequest('${escapeAttribute(r.id)}')">Approve</button> <button class="danger" onclick="rejectStudentCaUpdateRequest('${escapeAttribute(r.id)}')">Reject</button></td>
+        </tr>
+      `).join("") : "<tr><td colspan='8'>No pending CA status update request found.</td></tr>";
+    }
+
+    async function approveStudentCaUpdateRequest(requestId) {
+      if (!currentProfile || !["data_manager", "master"].includes(currentProfile.role)) {
+        showMessage("Only Data Manager can approve CA status update requests.", "error");
+        return;
+      }
+
+      const req = studentCaUpdateRequests.find(r => String(r.id) === String(requestId));
+      if (!req) {
+        showMessage("CA update request not found.", "error");
+        return;
+      }
+
+      if (!confirm("Approve this CA status update request?")) return;
+      const note = prompt("Approval note", "Approved by Data Manager") || "Approved by Data Manager";
+
+      const result = await db.rpc("approve_student_ca_status_request", {
+        request_id: requestId,
+        approval_note: note
+      });
+
+      if (result.error) {
+        showMessage("Approval failed: " + result.error.message, "error");
+        return;
+      }
+
+      await loadPublicStudents();
+      await loadStudentCaUpdateRequests();
+      renderCaUpdateRequestTable();
+      renderDataManagerList();
+      showMessage("CA status update approved successfully.", "success");
+    }
+
+    async function rejectStudentCaUpdateRequest(requestId) {
+      if (!currentProfile || !["data_manager", "master"].includes(currentProfile.role)) {
+        showMessage("Only Data Manager can reject CA status update requests.", "error");
+        return;
+      }
+
+      const req = studentCaUpdateRequests.find(r => String(r.id) === String(requestId));
+      if (!req) {
+        showMessage("CA update request not found.", "error");
+        return;
+      }
+
+      const note = prompt("Rejection note", "Rejected by Data Manager") || "Rejected by Data Manager";
+
+      const result = await db.rpc("reject_student_ca_status_request", {
+        request_id: requestId,
+        rejection_note: note
+      });
+
+      if (result.error) {
+        showMessage("Reject failed: " + result.error.message, "error");
+        return;
+      }
+
+      await loadStudentCaUpdateRequests();
+      renderCaUpdateRequestTable();
+      showMessage("CA status update request rejected.", "success");
+    }
+
     function renderReviewRequestTable() {
       const tbody = document.getElementById("reviewRequestTable");
       if (!tbody) return;
@@ -3778,18 +3954,22 @@
       const detailsResult = await db.from("student_details").select("*");
       studentDetails = detailsResult.data || [];
       await loadStudentAccountRequests();
+      await loadStudentCaUpdateRequests();
       if (currentProfile && currentProfile.role === "master") await loadStudentCredentials();
       renderDataManagerList();
       renderReviewRequestTable();
+      renderCaUpdateRequestTable();
       setDataManagerVisibility();
     }
 
     function setDataManagerVisibility() {
       const listCard = document.getElementById("studentDataListCard");
       const reviewCard = document.getElementById("accountReviewListCard");
+      const caUpdateCard = document.getElementById("caUpdateApprovalCard");
 
       if (listCard) listCard.classList.remove("hidden");
       if (reviewCard) reviewCard.classList.remove("hidden");
+      if (caUpdateCard) caUpdateCard.classList.remove("hidden");
     }
 
     async function loadStudentCredentials() {
@@ -4183,4 +4363,3 @@
   </script>
 </body>
 </html>
-
