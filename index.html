@@ -2057,6 +2057,7 @@
               <option value="">Select Designation</option>
               <option>Article Student</option>
               <option>Intern</option>
+              <option>Under Provision</option>
               <option>Manager</option>
             </select></div>
             <div><label>Registration No.</label><input id="reqRegistrationNo" placeholder="ICAB registration no."></div>
@@ -2426,6 +2427,7 @@
               <option value="">Select Designation</option>
               <option>Article Student</option>
               <option>Intern</option>
+              <option>Under Provision</option>
               <option>Manager</option>
             </select></div>
               <div><label>Registration No.</label><input id="registrationNo" placeholder="ICAB registration no."></div>
@@ -2595,6 +2597,7 @@
 
     async function init() {
       setToday();
+      setupDesignationFundRule();
       await loadPublicStudents();
       const result = await db.auth.getSession();
       const session = result.data.session;
@@ -2609,6 +2612,36 @@
         const el = document.getElementById(id); if (el) el.value = today;
       });
       const ms = document.getElementById("monthlySheetMonth"); if (ms) ms.value = month;
+    }
+
+    function isFundEligibleDesignation(designation) {
+      return designation === "Article Student" || designation === "Manager";
+    }
+
+    function applyFundResponsibilityRules() {
+      const designationEl = document.getElementById("designation");
+      const responsibilityEl = document.getElementById("fundResponsibility");
+      if (!designationEl || !responsibilityEl) return;
+
+      const eligible = isFundEligibleDesignation(designationEl.value);
+      Array.from(responsibilityEl.options).forEach(option => {
+        option.disabled = !eligible && option.value !== "Student" && option.textContent !== "Student";
+      });
+
+      if (!eligible) {
+        responsibilityEl.value = "Student";
+        responsibilityEl.title = "Only Article Student and Manager can be selected as fund members.";
+      } else {
+        responsibilityEl.title = "";
+      }
+    }
+
+    function setupDesignationFundRule() {
+      const designationEl = document.getElementById("designation");
+      if (designationEl) {
+        designationEl.addEventListener("change", applyFundResponsibilityRules);
+      }
+      applyFundResponsibilityRules();
     }
 
     async function refreshAll() {
@@ -3219,17 +3252,18 @@
 
     function renderStudentDropdowns() {
       const active = students.filter(s => s.status === "Active");
+      const fundEligibleStudents = active.filter(s => isFundEligibleDesignation(s.designation));
       const recSelect = document.getElementById("receivableStudent");
       const paySelect = document.getElementById("paymentStudent");
       const recLinkSelect = document.getElementById("paymentReceivable");
       const openingSelect = document.getElementById("openingStudent");
       const cashHolderSelect = document.getElementById("cashOpeningHolder");
-      recSelect.innerHTML = `<option value="ALL">All Active Students</option>`;
+      recSelect.innerHTML = `<option value="ALL">All Active Fund Members</option>`;
       paySelect.innerHTML = "";
       openingSelect.innerHTML = "";
       if (cashHolderSelect) cashHolderSelect.innerHTML = "";
       recLinkSelect.innerHTML = `<option value="">No linked receivable</option>`;
-      active.forEach(s => {
+      fundEligibleStudents.forEach(s => {
         const responsibility = s.fund_responsibility && s.fund_responsibility !== "Student" ? ` | ${s.fund_responsibility}` : "";
         const text = `${s.student_id} - ${s.full_name}${responsibility}`;
         recSelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
@@ -3237,7 +3271,7 @@
         openingSelect.innerHTML += `<option value="${escapeAttribute(s.student_id)}">${escapeHtml(text)}</option>`;
       });
 
-      const fundManagers = active.filter(function (s) {
+      const fundManagers = fundEligibleStudents.filter(function (s) {
         return s.fund_responsibility === "Fund Manager" || s.fund_responsibility === "Assistant Fund Manager";
       });
 
@@ -4137,6 +4171,7 @@
       document.getElementById("caResults").value = pub.ca_results || "";
       document.getElementById("branch").value = pub.branch || "";
       document.getElementById("fundResponsibility").value = pub.fund_responsibility || "Student";
+      applyFundResponsibilityRules();
       document.getElementById("studentStatus").value = pub.status || "Active";
       document.getElementById("studentLoginEmail").value = cred.login_email || "";
       document.getElementById("studentTempPassword").value = cred.temporary_password || "";
@@ -4156,7 +4191,13 @@
       const birthDateValue = document.getElementById("birthDate").value || null;
       let birthMonth = null, birthDay = null;
       if (birthDateValue) { const parts = birthDateValue.split("-"); birthMonth = Number(parts[1]); birthDay = Number(parts[2]); }
-      const publicRow = { student_id: sid, full_name: document.getElementById("fullName").value.trim(), photo_url: document.getElementById("photoUrl").value.trim(), designation: document.getElementById("designation").value.trim(), registration_no: document.getElementById("registrationNo").value.trim(), joining_date: document.getElementById("joiningDate").value || null, cc_complete_date: document.getElementById("ccCompleteDate").value || null, ca_level: document.getElementById("caLevel").value.trim(), ca_results: document.getElementById("caResults").value.trim(), branch: document.getElementById("branch").value.trim(), fund_responsibility: document.getElementById("fundResponsibility").value, status: document.getElementById("studentStatus").value, birth_month: birthMonth, birth_day: birthDay };
+      const designationValue = document.getElementById("designation").value.trim();
+      let fundResponsibilityValue = document.getElementById("fundResponsibility").value;
+      if (!isFundEligibleDesignation(designationValue)) {
+        fundResponsibilityValue = "Student";
+        document.getElementById("fundResponsibility").value = "Student";
+      }
+      const publicRow = { student_id: sid, full_name: document.getElementById("fullName").value.trim(), photo_url: document.getElementById("photoUrl").value.trim(), designation: designationValue, registration_no: document.getElementById("registrationNo").value.trim(), joining_date: document.getElementById("joiningDate").value || null, cc_complete_date: document.getElementById("ccCompleteDate").value || null, ca_level: document.getElementById("caLevel").value.trim(), ca_results: document.getElementById("caResults").value.trim(), branch: document.getElementById("branch").value.trim(), fund_responsibility: fundResponsibilityValue, status: document.getElementById("studentStatus").value, birth_month: birthMonth, birth_day: birthDay };
       const privateRow = { student_id: sid, phone: document.getElementById("privatePhone").value.trim(), email_private: document.getElementById("privateEmail").value.trim(), birth_date: birthDateValue, address: document.getElementById("privateAddress").value.trim(), notes: document.getElementById("privateNotes").value.trim() };
       const loginEmail = document.getElementById("studentLoginEmail").value.trim();
       const tempPassword = document.getElementById("studentTempPassword").value.trim();
@@ -4193,6 +4234,7 @@
     function clearStudentForm() {
       ["editingStudentId", "studentId", "fullName", "photoUrl", "designation", "registrationNo", "joiningDate", "ccCompleteDate", "caLevel", "caResults", "branch", "studentLoginEmail", "studentTempPassword", "privatePhone", "privateEmail", "birthDate", "privateAddress", "privateNotes"].forEach(id => document.getElementById(id).value = "");
       document.getElementById("fundResponsibility").value = "Student";
+      applyFundResponsibilityRules();
       document.getElementById("studentId").readOnly = false;
       document.getElementById("studentStatus").value = "Active";
     }
@@ -4336,6 +4378,7 @@
       if (!modal) return;
       if (titleBox) titleBox.textContent = title || "Add / Edit Data";
       applyMasterCredentialFieldVisibility();
+      applyFundResponsibilityRules();
 
       modal.classList.remove("hidden");
       modal.classList.add("show");
