@@ -2220,23 +2220,25 @@
           <button class="dark" onclick="clearFundNameForm()">Clear</button>
         </div>
 
-        <hr style="border:none; border-top:1px solid var(--border); margin:22px 0;">
+        <div style="display:none !important;">
+          <hr style="border:none; border-top:1px solid var(--border); margin:22px 0;">
 
-        <h3>Reset / Delete Existing Fund</h3>
+          <h3>Reset / Delete Existing Fund</h3>
 
-        <div class="form-grid">
-          <div>
-            <label>Select Fund</label>
-            <select id="fundManageSelect"></select>
+          <div class="form-grid">
+            <div>
+              <label>Select Fund</label>
+              <select id="fundManageSelect"></select>
+            </div>
           </div>
-        </div>
 
-        <div class="btn-row">
-          <button class="warning" onclick="resetSelectedFundData()">Reset Fund Data</button>
-          <button class="danger" onclick="deleteSelectedFund()">Delete Fund</button>
-        </div>
+          <div class="btn-row">
+            <button class="warning" onclick="resetSelectedFundData()">Reset Fund Data</button>
+            <button class="danger" onclick="deleteSelectedFund()">Delete Fund</button>
+          </div>
 
-        <br>
+          <br>
+        </div>
 
         <table>
           <thead>
@@ -2251,7 +2253,7 @@
         </table>
       </div>
 
-      <div id="openingBalanceManager" class="card hidden">
+      <div id="openingBalanceManager" class="card hidden" style="display:none !important;">
         <h2>Add / Update Opening Balance</h2>
         <div class="form-grid">
           <div><label>Fund Name</label><select id="openingFund"></select></div>
@@ -2266,7 +2268,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" style="display:none !important;">
         <h2>Opening Balance List</h2>
         <table>
           <thead><tr><th>Fund</th><th>Name</th><th>Opening Balance</th><th>Remarks</th><th>Status</th><th>Action</th></tr></thead>
@@ -3112,15 +3114,46 @@
       const recs = receivableResult.data || [];
       const pays = paymentResult.data || [];
 
-      const opening = openingBalances
+      const studentFundOpening = openingBalances
         .filter(o => o.student_id === studentId && o.status === "Active")
         .reduce((sum, o) => sum + Number(o.opening_balance || 0), 0);
 
-      const totalPaid = pays.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-      const unpaidReceivable = recs
-        .filter(r => r.status !== "Paid")
+      const todayForStudentFund = new Date();
+      const currentMonthStart = new Date(todayForStudentFund.getFullYear(), todayForStudentFund.getMonth(), 1);
+      const nextMonthStart = new Date(todayForStudentFund.getFullYear(), todayForStudentFund.getMonth() + 1, 1);
+
+      const parseLocalDate = (value) => {
+        if (!value) return null;
+        const parts = String(value).slice(0, 10).split("-").map(Number);
+        if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) return null;
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+      };
+
+      const isBeforeThisMonth = (value) => {
+        const d = parseLocalDate(value);
+        return d && d < currentMonthStart;
+      };
+
+      const isInThisMonth = (value) => {
+        const d = parseLocalDate(value);
+        return d && d >= currentMonthStart && d < nextMonthStart;
+      };
+
+      const previousReceivable = recs
+        .filter(r => isBeforeThisMonth(r.due_date))
         .reduce((sum, r) => sum + Number(r.amount || 0), 0);
-      const due = opening + unpaidReceivable;
+      const previousPaid = pays
+        .filter(p => isBeforeThisMonth(p.payment_date))
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const previousMonthClosingDue = studentFundOpening + previousReceivable - previousPaid;
+
+      const thisMonthPayable = recs
+        .filter(r => isInThisMonth(r.due_date))
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const thisMonthPaid = pays
+        .filter(p => isInThisMonth(p.payment_date))
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const due = previousMonthClosingDue + thisMonthPayable - thisMonthPaid;
 
       const recRows = recs.length
         ? recs.map(r => `<tr><td>${escapeHtml(r.fund_name)}</td><td>${escapeHtml(r.description)}</td><td>${money(r.amount)}</td><td>${escapeHtml(r.due_date)}</td><td><span class="${r.status === "Paid" ? "paid" : "unpaid"}">${escapeHtml(r.status)}</span></td><td>${escapeHtml(r.paid_at)}</td></tr>`).join("")
@@ -3166,10 +3199,10 @@
       const fundDashboardHtml = isFundMember
         ? `<div>
             <div class="cards">
-              <div class="card stat"><h3>Opening Balance</h3><div class="value">${money(opening)}</div></div>
-              <div class="card stat"><h3>Total Paid</h3><div class="value">${money(totalPaid)}</div></div>
+              <div class="card stat"><h3>Previous Month Closing Due</h3><div class="value">${money(previousMonthClosingDue)}</div></div>
+              <div class="card stat"><h3>This Month Fine/Donation Payable</h3><div class="value">${money(thisMonthPayable)}</div></div>
+              <div class="card stat"><h3>This Month Paid</h3><div class="value">${money(thisMonthPaid)}</div></div>
               <div class="card stat"><h3>Due Balance</h3><div class="value">${money(due)}</div></div>
-              <div class="card stat"><h3>Total Payments</h3><div class="value">${pays.length}</div></div>
             </div>
 
             <div class="card">
