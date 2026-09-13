@@ -345,6 +345,8 @@
     .inactive-status, .unpaid { color: var(--danger); font-weight: bold; }
 
     .profile-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; }
+    .profile-grid.no-fund { grid-template-columns: minmax(0, 760px); justify-content: start; }
+    .profile-grid.no-fund > .card { max-width: 760px; }
     .avatar { height: 135px; border-radius: 18px; background: linear-gradient(135deg, #000000, #991b1b); color: white; display: grid; place-items: center; font-size: 42px; font-weight: bold; margin-bottom: 14px; overflow: hidden; }
     .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -3142,8 +3144,36 @@
             </table>`
         : "";
 
+      const isFundMember = isFundEligibleDesignation(pub.designation);
+      const fundDashboardHtml = isFundMember
+        ? `<div>
+            <div class="cards">
+              <div class="card stat"><h3>Opening Balance</h3><div class="value">${money(opening)}</div></div>
+              <div class="card stat"><h3>Total Paid</h3><div class="value">${money(totalPaid)}</div></div>
+              <div class="card stat"><h3>Due Balance</h3><div class="value">${money(due)}</div></div>
+              <div class="card stat"><h3>Total Payments</h3><div class="value">${pays.length}</div></div>
+            </div>
+
+            <div class="card">
+              <h2>My Receivables</h2>
+              <table>
+                <thead><tr><th>Fund</th><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Paid At</th></tr></thead>
+                <tbody>${recRows}</tbody>
+              </table>
+            </div>
+
+            <div class="card">
+              <h2>My Payments</h2>
+              <table>
+                <thead><tr><th>Fund</th><th>Description</th><th>Amount</th><th>Payment Date</th><th>Method</th><th>Note</th></tr></thead>
+                <tbody>${payRows}</tbody>
+              </table>
+            </div>
+          </div>`
+        : "";
+
       return `
-        <div class="profile-grid">
+        <div class="profile-grid ${isFundMember ? "" : "no-fund"}">
           <div class="card">
             <div class="avatar">${pub.photo_url ? `<img src="${escapeHtml(pub.photo_url)}">` : escapeHtml(getInitials(pub.full_name))}</div>
             <h2>${escapeHtml(pub.full_name)}</h2>
@@ -3168,30 +3198,7 @@
             <div class="info"><span>Notes</span><strong>${escapeHtml(priv.notes)}</strong></div>
           </div>
 
-          <div>
-            <div class="cards">
-              <div class="card stat"><h3>Opening Balance</h3><div class="value">${money(opening)}</div></div>
-              <div class="card stat"><h3>Total Paid</h3><div class="value">${money(totalPaid)}</div></div>
-              <div class="card stat"><h3>Due Balance</h3><div class="value">${money(due)}</div></div>
-              <div class="card stat"><h3>Total Payments</h3><div class="value">${pays.length}</div></div>
-            </div>
-
-            <div class="card">
-              <h2>My Receivables</h2>
-              <table>
-                <thead><tr><th>Fund</th><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Paid At</th></tr></thead>
-                <tbody>${recRows}</tbody>
-              </table>
-            </div>
-
-            <div class="card">
-              <h2>My Payments</h2>
-              <table>
-                <thead><tr><th>Fund</th><th>Description</th><th>Amount</th><th>Payment Date</th><th>Method</th><th>Note</th></tr></thead>
-                <tbody>${payRows}</tbody>
-              </table>
-            </div>
-          </div>
+          ${fundDashboardHtml}
         </div>`;
     }
 
@@ -4574,4 +4581,3 @@
   </script>
 </body>
 </html>
-
