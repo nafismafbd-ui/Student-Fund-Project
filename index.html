@@ -2044,6 +2044,73 @@
       clear: both;
     }
 
+
+    /* Server organogram */
+    .organogram-wrap {
+      display: grid;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .org-group {
+      background: linear-gradient(145deg, #ffffff, #fff7f7);
+      border: 1px solid rgba(153, 27, 27, 0.18);
+      border-left: 6px solid var(--primary);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.85);
+    }
+    .org-group h3 {
+      margin: 0 0 12px;
+      color: var(--primary-dark);
+      font-size: 22px;
+    }
+    .org-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .org-person {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 16px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.06);
+    }
+    .org-avatar {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #000000, #991b1b);
+      color: white;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+    .org-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .org-name {
+      margin: 0;
+      font-size: 17px;
+      color: var(--primary-dark);
+      font-weight: 900;
+      line-height: 1.2;
+    }
+    .org-meta {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
   </style>
 </head>
 
@@ -2186,6 +2253,11 @@
           </div>
           <div id="publicProfileModalContent"></div>
         </div>
+      </div>
+
+      <div class="card">
+        <h2>Server Organogram</h2>
+        <div id="serverOrganogram"></div>
       </div>
 
       <div class="card">
@@ -2788,6 +2860,7 @@
       students = result.data || [];
       document.getElementById("heroNumber").textContent = students.length;
       renderBirthdayNotice();
+      renderServerOrganogram();
       renderPublicStudents();
     }
 
@@ -2810,6 +2883,60 @@
         </div>
       `;
       box.style.display = "block";
+    }
+
+    function getDesignationRank(designation) {
+      const rank = {
+        "Manager": 1,
+        "Article Student": 2,
+        "Intern": 3,
+        "Under Provision": 4
+      };
+      return rank[designation] || 99;
+    }
+
+    function sortOrganogramRows(rows) {
+      return rows.slice().sort((a, b) => {
+        const rankDiff = getDesignationRank(a.designation) - getDesignationRank(b.designation);
+        if (rankDiff !== 0) return rankDiff;
+        const dateA = safe(a.joining_date) || "9999-12-31";
+        const dateB = safe(b.joining_date) || "9999-12-31";
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+        return safe(a.full_name).localeCompare(safe(b.full_name));
+      });
+    }
+
+    function renderServerOrganogram() {
+      const box = document.getElementById("serverOrganogram");
+      if (!box) return;
+
+      const activeRows = sortOrganogramRows(students.filter(s => safe(s.status) === "Active"));
+      if (activeRows.length === 0) {
+        box.innerHTML = "<div class='notice'>No active profile found.</div>";
+        return;
+      }
+
+      const groups = [
+        { title: "Manager", rows: activeRows.filter(s => s.designation === "Manager") },
+        { title: "Article Student", rows: activeRows.filter(s => s.designation === "Article Student") },
+        { title: "Intern", rows: activeRows.filter(s => s.designation === "Intern") },
+        { title: "Under Provision", rows: activeRows.filter(s => s.designation === "Under Provision") }
+      ].filter(group => group.rows.length > 0);
+
+      box.innerHTML = `<div class="organogram-wrap">${groups.map(group => `
+        <div class="org-group">
+          <h3>${escapeHtml(group.title)}</h3>
+          <div class="org-grid">
+            ${group.rows.map(s => `
+              <div class="org-person">
+                <div class="org-avatar">${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}</div>
+                <div>
+                  <p class="org-name">${escapeHtml(s.full_name)}</p>
+                  <div class="org-meta">${escapeHtml(s.student_id)}${s.joining_date ? ` | Joining: ${escapeHtml(s.joining_date)}` : ""}</div>
+                </div>
+              </div>`).join("")}
+          </div>
+        </div>`).join("")}</div>`;
     }
 
     function renderPublicStudents() {
@@ -3712,9 +3839,20 @@
       const end = monthEnd(monthValue);
       let sl = 1;
       const rows = students.filter(s => s.status === "Active" && isFundEligibleDesignation(s.designation)).map(s => {
-        const opening = getOpeningBalance(s.student_id, fundName);
-        const monthlyReceivable = receivables.filter(r => r.student_id === s.student_id && r.fund_name === fundName && r.due_date >= start && r.due_date <= end).reduce((sum, r) => sum + Number(r.amount || 0), 0);
-        const monthlyPaid = payments.filter(p => p.student_id === s.student_id && p.fund_name === fundName && p.payment_date >= start && p.payment_date <= end).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+        const originalOpening = getOpeningBalance(s.student_id, fundName);
+        const previousReceivable = receivables
+          .filter(r => r.student_id === s.student_id && r.fund_name === fundName && safe(r.due_date) && safe(r.due_date) < start)
+          .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        const previousPaid = payments
+          .filter(p => p.student_id === s.student_id && p.fund_name === fundName && safe(p.payment_date) && safe(p.payment_date) < start)
+          .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+        const opening = originalOpening + previousReceivable - previousPaid;
+        const monthlyReceivable = receivables
+          .filter(r => r.student_id === s.student_id && r.fund_name === fundName && r.due_date >= start && r.due_date <= end)
+          .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        const monthlyPaid = payments
+          .filter(p => p.student_id === s.student_id && p.fund_name === fundName && p.payment_date >= start && p.payment_date <= end)
+          .reduce((sum, p) => sum + Number(p.amount || 0), 0);
         const due = opening + monthlyReceivable - monthlyPaid;
         return `<tr><td>${sl++}</td><td>${escapeHtml(s.student_id)}</td><td>${escapeHtml(s.full_name)}</td><td>${escapeHtml(s.designation)}</td><td class="amount-cell">${money(opening)}</td><td class="amount-cell">${money(monthlyReceivable)}</td><td class="amount-cell">${money(monthlyPaid)}</td><td class="amount-cell">${money(due)}</td><td style="height:30px;"></td></tr>`;
       }).join("");
