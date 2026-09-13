@@ -2026,6 +2026,24 @@
       }
     }
 
+
+
+    /* Student own CA update button - compact */
+    .student-ca-submit-btn {
+      width: auto !important;
+      max-width: 260px !important;
+      padding: 8px 14px !important;
+      font-size: 13px !important;
+      border-radius: 12px !important;
+      line-height: 1.2 !important;
+      margin-bottom: 10px !important;
+    }
+
+    .student-ca-request-title {
+      margin-top: 14px !important;
+      clear: both;
+    }
+
   </style>
 </head>
 
@@ -3106,7 +3124,7 @@
 
       const recRows = recs.length
         ? recs.map(r => `<tr><td>${escapeHtml(r.fund_name)}</td><td>${escapeHtml(r.description)}</td><td>${money(r.amount)}</td><td>${escapeHtml(r.due_date)}</td><td><span class="${r.status === "Paid" ? "paid" : "unpaid"}">${escapeHtml(r.status)}</span></td><td>${escapeHtml(r.paid_at)}</td></tr>`).join("")
-        : "<tr><td colspan='6'>No receivable found.</td></tr>";
+        : "<tr><td colspan='6'>No payable found.</td></tr>";
 
       const payRows = pays.length
         ? pays.map(p => `<tr><td>${escapeHtml(p.fund_name)}</td><td>${escapeHtml(p.description)}</td><td>${money(p.amount)}</td><td>${escapeHtml(p.payment_date)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.note)}</td></tr>`).join("")
@@ -3135,9 +3153,9 @@
               <div><label>CA Result Summary</label><select id="studentEditCaResults">${caResultOptionsHtml(pub.ca_results || "")}</select></div>
             </div>
             <div class="btn-row">
-              <button onclick="updateMyCaStatus()" ${hasPendingCaUpdate ? "disabled" : ""}>Submit for Data Manager Approval</button>
+              <button class="student-ca-submit-btn" onclick="updateMyCaStatus()" ${hasPendingCaUpdate ? "disabled" : ""}>Submit Approval Request</button>
             </div>
-            <h3>My CA Update Requests</h3>
+            <h3 class="student-ca-request-title">My CA Update Requests</h3>
             <table>
               <thead><tr><th>Date</th><th>Requested CA Level</th><th>Requested Result</th><th>Status</th><th>Review Note</th></tr></thead>
               <tbody>${myCaUpdateRows}</tbody>
@@ -3155,7 +3173,7 @@
             </div>
 
             <div class="card">
-              <h2>My Receivables</h2>
+              <h2>My Payables</h2>
               <table>
                 <thead><tr><th>Fund</th><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Paid At</th></tr></thead>
                 <tbody>${recRows}</tbody>
