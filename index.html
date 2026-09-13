@@ -2316,9 +2316,9 @@
         <div class="card">
           <h2>Receive Fund</h2>
           <div class="form-grid">
-            <div><label>Fund Name</label><select id="paymentFund"></select></div>
-            <div><label>Student</label><select id="paymentStudent"></select></div>
-            <div><label>Linked Receivable</label><select id="paymentReceivable"></select></div>
+            <div><label>Fund Name</label><select id="paymentFund" onchange="renderPaymentReceivableOptions()"></select></div>
+            <div><label>Student</label><select id="paymentStudent" onchange="renderPaymentReceivableOptions()"></select></div>
+            <div><label>Linked Receivable</label><select id="paymentReceivable" onchange="syncPaymentFromLinkedReceivable()"></select></div>
             <div><label>Amount</label><input type="number" id="paymentAmount" placeholder="Example: 500"></div>
             <div><label>Payment Date</label><input type="date" id="paymentDate"></div>
             <div><label>Method</label><select id="paymentMethod"><option>Cash</option><option>Bkash</option><option>Nagad</option><option>Bank</option><option>Other</option></select></div>
@@ -3385,9 +3385,38 @@
           });
         }
       }
-      receivables.filter(r => r.status !== "Paid").forEach(r => {
-        recLinkSelect.innerHTML += `<option value="${escapeAttribute(r.id)}">${escapeHtml(r.fund_name)} | ${escapeHtml(r.student_id)} - ${escapeHtml(r.description)} - ${money(r.amount)}</option>`;
-      });
+      renderPaymentReceivableOptions();
+    }
+
+    function renderPaymentReceivableOptions() {
+      const recLinkSelect = document.getElementById("paymentReceivable");
+      if (!recLinkSelect) return;
+      const selectedStudentId = document.getElementById("paymentStudent")?.value || "";
+      const selectedFundName = document.getElementById("paymentFund")?.value || "";
+      recLinkSelect.innerHTML = `<option value="">No linked receivable</option>`;
+
+      if (!selectedStudentId) return;
+
+      receivables
+        .filter(r => r.status !== "Paid")
+        .filter(r => String(r.student_id) === String(selectedStudentId))
+        .filter(r => !selectedFundName || String(r.fund_name) === String(selectedFundName))
+        .forEach(r => {
+          recLinkSelect.innerHTML += `<option value="${escapeAttribute(r.id)}">${escapeHtml(r.fund_name)} | ${escapeHtml(r.student_id)} - ${escapeHtml(r.description)} - ${money(r.amount)}</option>`;
+        });
+    }
+
+    function syncPaymentFromLinkedReceivable() {
+      const linkedReceivableId = document.getElementById("paymentReceivable")?.value || "";
+      if (!linkedReceivableId) return;
+      const rec = receivables.find(r => String(r.id) === String(linkedReceivableId));
+      if (!rec) return;
+      const amountInput = document.getElementById("paymentAmount");
+      if (amountInput) amountInput.value = Number(rec.amount || 0);
+      const fundSelect = document.getElementById("paymentFund");
+      if (fundSelect) fundSelect.value = rec.fund_name || fundSelect.value;
+      const studentSelect = document.getElementById("paymentStudent");
+      if (studentSelect) studentSelect.value = rec.student_id || studentSelect.value;
     }
 
     function renderOpeningBalanceTable() {
@@ -3575,7 +3604,7 @@
       if (!sid || amount <= 0 || !description) { showMessage("Fund, student, amount and description are required.", "error"); return; }
       let rows = [];
       if (sid === "ALL") {
-        rows = students.filter(s => s.status === "Active").map(s => ({ fund_name: fundName, student_id: s.student_id, student_name: s.full_name, description, amount, due_date: dueDate, status: "Unpaid" }));
+        rows = students.filter(s => s.status === "Active" && isFundEligibleDesignation(s.designation)).map(s => ({ fund_name: fundName, student_id: s.student_id, student_name: s.full_name, description, amount, due_date: dueDate, status: "Unpaid" }));
       } else {
         const student = students.find(s => s.student_id === sid);
         rows = [{ fund_name: fundName, student_id: student.student_id, student_name: student.full_name, description, amount, due_date: dueDate, status: "Unpaid" }];
@@ -3682,7 +3711,7 @@
       const start = monthValue + "-01";
       const end = monthEnd(monthValue);
       let sl = 1;
-      const rows = students.filter(s => s.status === "Active").map(s => {
+      const rows = students.filter(s => s.status === "Active" && isFundEligibleDesignation(s.designation)).map(s => {
         const opening = getOpeningBalance(s.student_id, fundName);
         const monthlyReceivable = receivables.filter(r => r.student_id === s.student_id && r.fund_name === fundName && r.due_date >= start && r.due_date <= end).reduce((sum, r) => sum + Number(r.amount || 0), 0);
         const monthlyPaid = payments.filter(p => p.student_id === s.student_id && p.fund_name === fundName && p.payment_date >= start && p.payment_date <= end).reduce((sum, p) => sum + Number(p.amount || 0), 0);
