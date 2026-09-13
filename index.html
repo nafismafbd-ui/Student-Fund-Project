@@ -2255,10 +2255,6 @@
         </div>
       </div>
 
-      <div class="card">
-        <h2>Server Organogram</h2>
-        <div id="serverOrganogram"></div>
-      </div>
 
       <div class="card">
         <h2>All Profiles</h2>
@@ -2482,7 +2478,23 @@
             <h3>Data List</h3>
             <button class="dark" onclick="scrollToStudentDataList()">Go to List</button>
           </div>
+
+          <div class="data-action-card">
+            <h3>Organogram List</h3>
+            <button onclick="scrollToOrganogramList()">List / Print</button>
+          </div>
         </div>
+      </div>
+
+      <div class="card" id="organogramListCard">
+        <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
+          <h2>Server Organogram List</h2>
+          <button onclick="printServerOrganogram()">Print Organogram</button>
+        </div>
+        <table>
+          <thead><tr><th>SL</th><th>ID</th><th>Name</th><th>Designation</th><th>Joining Date</th><th>Branch</th><th>CA Level</th><th>CA Result</th><th>Status</th></tr></thead>
+          <tbody id="serverOrganogramTable"></tbody>
+        </table>
       </div>
 
       <div class="card" id="accountReviewListCard">
@@ -2860,7 +2872,7 @@
       students = result.data || [];
       document.getElementById("heroNumber").textContent = students.length;
       renderBirthdayNotice();
-      renderServerOrganogram();
+      renderServerOrganogramTable();
       renderPublicStudents();
     }
 
@@ -2937,6 +2949,42 @@
               </div>`).join("")}
           </div>
         </div>`).join("")}</div>`;
+    }
+
+    function buildServerOrganogramGroups() {
+      const activeRows = sortOrganogramRows(students.filter(s => safe(s.status) === "Active"));
+      return [
+        { title: "Manager", rows: activeRows.filter(s => s.designation === "Manager") },
+        { title: "Article Student", rows: activeRows.filter(s => s.designation === "Article Student") },
+        { title: "Intern", rows: activeRows.filter(s => s.designation === "Intern") },
+        { title: "Under Provision", rows: activeRows.filter(s => s.designation === "Under Provision") }
+      ].filter(group => group.rows.length > 0);
+    }
+
+    function renderServerOrganogramTable() {
+      const box = document.getElementById("serverOrganogramTable");
+      if (!box) return;
+      const groups = buildServerOrganogramGroups();
+      if (groups.length === 0) {
+        box.innerHTML = "<tr><td colspan='9'>No active profile found.</td></tr>";
+        return;
+      }
+      let sl = 1;
+      box.innerHTML = groups.map(group => `
+        <tr><th colspan="9" style="text-align:left;background:#fff3f3;color:#7f1d1d;">${escapeHtml(group.title)}</th></tr>
+        ${group.rows.map(s => `
+          <tr>
+            <td>${sl++}</td>
+            <td>${escapeHtml(s.student_id)}</td>
+            <td>${escapeHtml(s.full_name)}</td>
+            <td>${escapeHtml(s.designation)}</td>
+            <td>${escapeHtml(s.joining_date || "")}</td>
+            <td>${escapeHtml(s.branch || "")}</td>
+            <td>${escapeHtml(s.ca_level || "")}</td>
+            <td>${escapeHtml(s.ca_results || "")}</td>
+            <td>${escapeHtml(s.status || "")}</td>
+          </tr>`).join("")}
+      `).join("");
     }
 
     function renderPublicStudents() {
@@ -3792,6 +3840,45 @@
       ["expensePayee", "expenseDescription", "expenseAmount", "expenseReference", "expenseNote"].forEach(id => document.getElementById(id).value = "");
       await loadFundData();
       showMessage("Fund payment added successfully.", "success");
+    }
+
+    function printServerOrganogram() {
+      const groups = buildServerOrganogramGroups();
+      if (groups.length === 0) { showMessage("No active profile found for organogram.", "error"); return; }
+      let sl = 1;
+      const rows = groups.map(group => `
+        <tr><th colspan="9" style="text-align:left;background:#f2f2f2;">${escapeHtml(group.title)}</th></tr>
+        ${group.rows.map(s => `
+          <tr>
+            <td>${sl++}</td>
+            <td>${escapeHtml(s.student_id)}</td>
+            <td>${escapeHtml(s.full_name)}</td>
+            <td>${escapeHtml(s.designation)}</td>
+            <td>${escapeHtml(s.joining_date || "")}</td>
+            <td>${escapeHtml(s.branch || "")}</td>
+            <td>${escapeHtml(s.ca_level || "")}</td>
+            <td>${escapeHtml(s.ca_results || "")}</td>
+            <td>${escapeHtml(s.status || "")}</td>
+          </tr>`).join("")}
+      `).join("");
+      const html = printHeader("Server Organogram") + `
+        <table>
+          <colgroup>
+            <col style="width:5%;">
+            <col style="width:10%;">
+            <col style="width:22%;">
+            <col style="width:13%;">
+            <col style="width:12%;">
+            <col style="width:14%;">
+            <col style="width:8%;">
+            <col style="width:10%;">
+            <col style="width:6%;">
+          </colgroup>
+          <thead><tr><th>SL</th><th>ID</th><th>Name</th><th>Designation</th><th>Joining Date</th><th>Branch</th><th>CA Level</th><th>CA Result</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${signatureBlock()}`;
+      printHtml(html);
     }
 
     function printDailyVoucher() {
@@ -4696,6 +4783,12 @@
     function scrollToStudentDataList() {
       const box = document.getElementById("studentDataListCard");
       if (box) box.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function scrollToOrganogramList() {
+      const box = document.getElementById("organogramListCard");
+      if (box) box.scrollIntoView({ behavior: "smooth", block: "start" });
+      renderServerOrganogramTable();
     }
 
     function openTab(tabId, btn) {
