@@ -2111,6 +2111,36 @@
       line-height: 1.35;
     }
 
+  
+
+    /* Modal top-right close button fix: compact X button, no vertical text */
+    .modal-panel > .modal-header .modal-close {
+      width: 42px !important;
+      min-width: 42px !important;
+      max-width: 42px !important;
+      height: 42px !important;
+      padding: 0 !important;
+      border-radius: 50% !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      line-height: 1 !important;
+      font-size: 28px !important;
+      font-weight: 900 !important;
+      background: #ffffff !important;
+      color: #7f1d1d !important;
+      border: 1px solid rgba(127, 29, 29, 0.18) !important;
+      box-shadow: 0 7px 18px rgba(0,0,0,0.22) !important;
+    }
+
+    .modal-panel > .modal-header .modal-close:hover {
+      background: #fee2e2 !important;
+      color: #991b1b !important;
+      transform: translateY(-1px) !important;
+    }
+
   </style>
 </head>
 
@@ -2532,7 +2562,7 @@
         <div class="modal-panel">
           <div class="modal-header">
             <h2>Review Account Request</h2>
-            <button class="modal-close" onclick="closeReviewRequestModal()">Close</button>
+            <button class="modal-close" onclick="closeReviewRequestModal()" title="Close" aria-label="Close">×</button>
           </div>
 
           <div class="modal-body">
@@ -2561,7 +2591,7 @@
         <div class="modal-panel">
           <div class="modal-header">
             <h2 id="studentFormModalTitle">Add / Edit Data</h2>
-            <button class="modal-close" onclick="closeStudentFormModal()">Close</button>
+            <button class="modal-close" onclick="closeStudentFormModal()" title="Close" aria-label="Close">×</button>
           </div>
 
           <div class="modal-body">
