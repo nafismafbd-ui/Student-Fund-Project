@@ -2480,7 +2480,7 @@
           </div>
 
           <div class="data-action-card">
-            <h3>Organogram List</h3>
+            <h3>Branch Wise List</h3>
             <button onclick="scrollToOrganogramList()">List / Print</button>
           </div>
         </div>
@@ -2488,8 +2488,8 @@
 
       <div class="card" id="organogramListCard">
         <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
-          <h2>Server Organogram List</h2>
-          <button onclick="printServerOrganogram()">Print Organogram</button>
+          <h2>Branch Wise List</h2>
+          <button onclick="printServerOrganogram()">Print Branch Wise List</button>
         </div>
         <table>
           <thead><tr><th>SL</th><th>ID</th><th>Name</th><th>Designation</th><th>Joining Date</th><th>Branch</th><th>CA Level</th><th>CA Result</th><th>Status</th></tr></thead>
@@ -2953,12 +2953,11 @@
 
     function buildServerOrganogramGroups() {
       const activeRows = sortOrganogramRows(students.filter(s => safe(s.status) === "Active"));
-      return [
-        { title: "Manager", rows: activeRows.filter(s => s.designation === "Manager") },
-        { title: "Article Student", rows: activeRows.filter(s => s.designation === "Article Student") },
-        { title: "Intern", rows: activeRows.filter(s => s.designation === "Intern") },
-        { title: "Under Provision", rows: activeRows.filter(s => s.designation === "Under Provision") }
-      ].filter(group => group.rows.length > 0);
+      const branchNames = Array.from(new Set(activeRows.map(s => safe(s.branch) || "No Branch"))).sort((a, b) => a.localeCompare(b));
+      return branchNames.map(branch => ({
+        title: branch,
+        rows: activeRows.filter(s => (safe(s.branch) || "No Branch") === branch)
+      })).filter(group => group.rows.length > 0);
     }
 
     function renderServerOrganogramTable() {
@@ -3844,7 +3843,7 @@
 
     function printServerOrganogram() {
       const groups = buildServerOrganogramGroups();
-      if (groups.length === 0) { showMessage("No active profile found for organogram.", "error"); return; }
+      if (groups.length === 0) { showMessage("No active profile found for branch wise list.", "error"); return; }
       let sl = 1;
       const rows = groups.map(group => `
         <tr><th colspan="9" style="text-align:left;background:#f2f2f2;">${escapeHtml(group.title)}</th></tr>
@@ -3861,7 +3860,7 @@
             <td>${escapeHtml(s.status || "")}</td>
           </tr>`).join("")}
       `).join("");
-      const html = printHeader("Server Organogram") + `
+      const html = printHeader("Branch Wise List") + `
         <table>
           <colgroup>
             <col style="width:5%;">
@@ -3877,7 +3876,7 @@
           <thead><tr><th>SL</th><th>ID</th><th>Name</th><th>Designation</th><th>Joining Date</th><th>Branch</th><th>CA Level</th><th>CA Result</th><th>Status</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
-        ${signatureBlock()}`;
+        `;
       printHtml(html);
     }
 
@@ -3914,7 +3913,7 @@
           <tbody>${receiptHtml}${paymentHtml}</tbody>
           <tfoot><tr><th colspan="6" class="amount-cell">Total</th><th class="amount-cell">${money(totalReceived)}</th><th class="amount-cell">${money(totalPayment)}</th></tr></tfoot>
         </table>
-        ${signatureBlock()}`;
+        `;
       printHtml(html);
     }
 
@@ -3962,7 +3961,7 @@
           <thead><tr><th>SL</th><th>ID</th><th>Name</th><th>Designation</th><th class="amount-cell">Opening</th><th class="amount-cell">Monthly Due</th><th class="amount-cell">Paid</th><th class="amount-cell">Balance</th><th>Signature</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
-        ${signatureBlock()}`;
+        `;
       printHtml(html);
     }
 
