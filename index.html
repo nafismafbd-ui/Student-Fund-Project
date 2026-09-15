@@ -3210,6 +3210,13 @@
           <thead><tr><th>Date</th><th>ID</th><th>Name</th><th>Branch</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Manager Note</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="partnerLeaveTable"></tbody>
         </table>
+
+        <div style="height:22px"></div>
+        <h3 style="margin:0 0 12px;font-size:24px;">Last 7 Days Actions</h3>
+        <table>
+          <thead><tr><th>Decision Date</th><th>ID</th><th>Name</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Final Status</th><th>Partner Note</th></tr></thead>
+          <tbody id="partnerRecentLeaveTable"></tbody>
+        </table>
       </div>
     </section>
   </main>
@@ -4170,14 +4177,21 @@
       const tbody = document.getElementById("managerLeaveTable");
       if (!tbody) return;
 
-      const pendingRows = leaveApplications.filter(r => r.status === "Submitted");
+      // Keep newly submitted applications visible for Manager action,
+      // and keep Manager Recommended applications visible while they are waiting for Partner.
+      const pendingRows = leaveApplications.filter(r => ["Submitted", "Manager Recommended"].includes(r.status));
       tbody.innerHTML = pendingRows.length ? pendingRows.map(r => {
         const canReview = !currentProfile.student_id || r.student_id !== currentProfile.student_id;
-        const action = canReview
-          ? `<button class="success" onclick="managerReviewLeave('${escapeAttribute(r.id)}','recommend')">Recommend</button> <button class="danger" onclick="managerReviewLeave('${escapeAttribute(r.id)}','reject')">Reject</button>`
-          : "Own application";
+        let action = "";
+        if (r.status === "Manager Recommended") {
+          action = `<span class="leave-status manager-recommended">Sent to Partner</span>`;
+        } else {
+          action = canReview
+            ? `<button class="success" onclick="managerReviewLeave('${escapeAttribute(r.id)}','recommend')">Recommend</button> <button class="danger" onclick="managerReviewLeave('${escapeAttribute(r.id)}','reject')">Reject</button>`
+            : "Own application";
+        }
         return `<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.student_id)}</td><td>${escapeHtml(r.applicant_name)}</td><td>${escapeHtml(r.branch)}</td><td>${escapeHtml(r.leave_type)}</td><td>${escapeHtml(r.from_date)}</td><td>${escapeHtml(r.to_date)}</td><td>${escapeHtml(r.total_days)}</td><td>${escapeHtml(r.reason)}</td><td><span class="leave-status ${leaveStatusClass(r.status)}">${escapeHtml(r.status)}</span></td><td>${action}</td></tr>`;
-      }).join("") : "<tr><td colspan='11'>No leave application waiting for Manager recommendation.</td></tr>";
+      }).join("") : "<tr><td colspan='11'>No leave application waiting for Manager recommendation or Partner approval.</td></tr>";
     }
 
     async function managerReviewLeave(leaveId, decision) {
@@ -4249,13 +4263,30 @@
 
     function renderPartnerLeaveTable() {
       const tbody = document.getElementById("partnerLeaveTable");
-      if (!tbody) return;
+      const recentTbody = document.getElementById("partnerRecentLeaveTable");
 
-      const pendingRows = leaveApplications.filter(r => r.status === "Manager Recommended");
-      tbody.innerHTML = pendingRows.length ? pendingRows.map(r => {
-        const action = `<button class="success" onclick="partnerReviewLeave('${escapeAttribute(r.id)}','approve')">Approve</button> <button class="danger" onclick="partnerReviewLeave('${escapeAttribute(r.id)}','reject')">Reject</button>`;
-        return `<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.student_id)}</td><td>${escapeHtml(r.applicant_name)}</td><td>${escapeHtml(r.branch)}</td><td>${escapeHtml(r.leave_type)}</td><td>${escapeHtml(r.from_date)}</td><td>${escapeHtml(r.to_date)}</td><td>${escapeHtml(r.total_days)}</td><td>${escapeHtml(r.manager_note)}</td><td><span class="leave-status ${leaveStatusClass(r.status)}">${escapeHtml(r.status)}</span></td><td>${action}</td></tr>`;
-      }).join("") : "<tr><td colspan='11'>No Manager-recommended leave application found.</td></tr>";
+      if (tbody) {
+        const pendingRows = leaveApplications.filter(r => r.status === "Manager Recommended");
+        tbody.innerHTML = pendingRows.length ? pendingRows.map(r => {
+          const action = `<button class="success" onclick="partnerReviewLeave('${escapeAttribute(r.id)}','approve')">Approve</button> <button class="danger" onclick="partnerReviewLeave('${escapeAttribute(r.id)}','reject')">Reject</button>`;
+          return `<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.student_id)}</td><td>${escapeHtml(r.applicant_name)}</td><td>${escapeHtml(r.branch)}</td><td>${escapeHtml(r.leave_type)}</td><td>${escapeHtml(r.from_date)}</td><td>${escapeHtml(r.to_date)}</td><td>${escapeHtml(r.total_days)}</td><td>${escapeHtml(r.manager_note)}</td><td><span class="leave-status ${leaveStatusClass(r.status)}">${escapeHtml(r.status)}</span></td><td>${action}</td></tr>`;
+        }).join("") : "<tr><td colspan='11'>No Manager-recommended leave application found.</td></tr>";
+      }
+
+      if (recentTbody) {
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        const recentRows = leaveApplications
+          .filter(r => ["Partner Approved", "Partner Rejected"].includes(r.status))
+          .filter(r => {
+            const actionDate = r.partner_decided_at ? new Date(r.partner_decided_at).getTime() : 0;
+            return actionDate >= sevenDaysAgo;
+          })
+          .sort((a, b) => new Date(b.partner_decided_at || 0) - new Date(a.partner_decided_at || 0));
+
+        recentTbody.innerHTML = recentRows.length ? recentRows.map(r => {
+          return `<tr><td>${escapeHtml(formatDate(r.partner_decided_at))}</td><td>${escapeHtml(r.student_id)}</td><td>${escapeHtml(r.applicant_name)}</td><td>${escapeHtml(r.leave_type)}</td><td>${escapeHtml(r.from_date)}</td><td>${escapeHtml(r.to_date)}</td><td>${escapeHtml(r.total_days)}</td><td><span class="leave-status ${leaveStatusClass(r.status)}">${escapeHtml(r.status)}</span></td><td>${escapeHtml(r.partner_note || "")}</td></tr>`;
+        }).join("") : "<tr><td colspan='9'>No Partner action in the last 7 days.</td></tr>";
+      }
     }
 
     async function partnerReviewLeave(leaveId, decision) {
