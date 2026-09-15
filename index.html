@@ -2141,6 +2141,56 @@
       transform: translateY(-1px) !important;
     }
 
+
+
+    /* Leave application workflow */
+    .leave-status {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      white-space: nowrap;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+    }
+    .leave-status.submitted { color: #92400e; background: #fffbeb; border-color: #fcd34d; }
+    .leave-status.manager-recommended { color: #1d4ed8; background: #eff6ff; border-color: #93c5fd; }
+    .leave-status.manager-rejected,
+    .leave-status.partner-rejected { color: #b91c1c; background: #fef2f2; border-color: #fca5a5; }
+    .leave-status.partner-approved { color: #047857; background: #ecfdf5; border-color: #6ee7b7; }
+    .leave-form-card { margin-top: 18px; }
+    .leave-form-card h3 { margin-top: 0; }
+    .leave-flow-note {
+      margin: 8px 0 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .partner-profile-box {
+      display: grid;
+      grid-template-columns: minmax(180px, 240px) 1fr;
+      gap: 22px;
+      align-items: center;
+    }
+    .partner-profile-photo {
+      width: 100%;
+      aspect-ratio: 1/1;
+      border-radius: 18px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: 700;
+    }
+    .partner-profile-photo img { width: 100%; height: 100%; object-fit: contain; }
+    @media (max-width: 760px) {
+      .partner-profile-box { grid-template-columns: 1fr; }
+      .partner-profile-photo { max-width: 240px; }
+    }
+
   </style>
 </head>
 
@@ -2187,6 +2237,8 @@
       <button class="tab-btn hidden" id="fundTabBtn" data-tab="fundTab" onclick="openTab('fundTab', this)">Fund</button>
       <button class="tab-btn hidden" id="dataTabBtn" data-tab="dataTab" onclick="openTab('dataTab', this)">Data Manager</button>
       <button class="tab-btn hidden" id="masterTabBtn" data-tab="masterTab" onclick="openTab('masterTab', this)">Master Account</button>
+      <button class="tab-btn hidden" id="managerLeaveTabBtn" data-tab="managerLeaveTab" onclick="openTab('managerLeaveTab', this)">Leave Manager</button>
+      <button class="tab-btn hidden" id="partnerTabBtn" data-tab="partnerTab" onclick="openTab('partnerTab', this)">Partner</button>
     </div>
 
     <section id="publicTab" class="tab active">
@@ -2693,6 +2745,42 @@
         </table>
       </div>
     </section>
+
+    <section id="managerLeaveTab" class="tab">
+      <div class="card">
+        <h2>Leave Applications - Manager Recommendation</h2>
+        <p class="leave-flow-note">Recommending an application sends it to the Partner for final approval.</p>
+        <table>
+          <thead><tr><th>Date</th><th>ID</th><th>Name</th><th>Branch</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="managerLeaveTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="partnerTab" class="tab">
+      <div class="card">
+        <h2>My Partner Profile</h2>
+        <div id="partnerProfileBox"></div>
+      </div>
+
+      <div class="card">
+        <h2>Leave Applications - Partner Approval</h2>
+        <p class="leave-flow-note">Only applications recommended by the Manager are available for final approval.</p>
+        <table>
+          <thead><tr><th>Date</th><th>ID</th><th>Name</th><th>Branch</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Manager Note</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="partnerLeaveTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Student Profiles</h2>
+        <input class="search" id="partnerStudentSearch" placeholder="Search profile..." oninput="renderPartnerStudentList()">
+        <table>
+          <thead><tr><th>ID</th><th>Name</th><th>Designation</th><th>Branch</th><th>CA Level</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="partnerStudentTable"></tbody>
+        </table>
+      </div>
+    </section>
   </main>
 
 
@@ -2769,6 +2857,8 @@
     let cashInHandOpeningBalances = [];
     let studentAccountRequests = [];
     let studentCaUpdateRequests = [];
+    let leaveApplications = [];
+    let partnerProfile = null;
     let funds = [];
 
     document.addEventListener("DOMContentLoaded", init);
@@ -2882,8 +2972,14 @@
       document.getElementById("logoutBtn").classList.remove("hidden");
       hideRoleTabs();
       if (roleText === "student") { document.getElementById("studentTabBtn").classList.remove("hidden"); openTabById("studentTab"); }
+      if (roleText === "manager") {
+        document.getElementById("studentTabBtn").classList.remove("hidden");
+        document.getElementById("managerLeaveTabBtn").classList.remove("hidden");
+        openTabById("managerLeaveTab");
+      }
       if (roleText === "fund_manager") { document.getElementById("fundTabBtn").classList.remove("hidden"); openTabById("fundTab"); }
       if (roleText === "data_manager") { document.getElementById("dataTabBtn").classList.remove("hidden"); openTabById("dataTab"); }
+      if (roleText === "partner") { document.getElementById("partnerTabBtn").classList.remove("hidden"); openTabById("partnerTab"); }
       if (roleText === "master") {
         document.getElementById("fundTabBtn").classList.remove("hidden");
         document.getElementById("dataTabBtn").classList.remove("hidden");
@@ -2893,7 +2989,7 @@
     }
 
     function hideRoleTabs() {
-      ["studentTabBtn", "fundTabBtn", "dataTabBtn", "masterTabBtn"].forEach(id => document.getElementById(id).classList.add("hidden"));
+      ["studentTabBtn", "fundTabBtn", "dataTabBtn", "masterTabBtn", "managerLeaveTabBtn", "partnerTabBtn"].forEach(id => document.getElementById(id).classList.add("hidden"));
     }
 
     async function loadPublicStudents() {
@@ -3093,9 +3189,14 @@
 
     async function loadRoleData() {
       const role = currentProfile.role;
-      if (role === "student") await loadStudentDashboard();
+      if (role === "student" || role === "manager") {
+        await loadStudentDashboard();
+        await configureManagerLeaveAccess();
+      }
+      if (role === "manager") await loadManagerLeaveData();
       if (role === "fund_manager" || role === "master") await loadFundData();
       if (role === "data_manager" || role === "master") await loadStudentDataManager();
+      if (role === "partner") await loadPartnerData();
       if (role === "master") await loadMasterData();
     }
 
@@ -3399,6 +3500,13 @@
             </table>`
         : "";
 
+      const studentLeaveBox = currentProfile
+        && ["student", "manager"].includes(currentProfile.role)
+        && currentProfile.student_id === studentId
+        && pub.status === "Active"
+        ? await buildStudentLeaveApplicationBox(studentId)
+        : "";
+
       const isFundMember = isFundEligibleDesignation(pub.designation);
       const fundDashboardHtml = isFundMember
         ? `<div>
@@ -3444,6 +3552,7 @@
             <div class="info"><span>Status</span><strong class="${pub.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(pub.status)}</strong></div>
 
             ${studentCaEditBox}
+            ${studentLeaveBox}
 
             <h3>Private Details</h3>
             <div class="info"><span>Phone</span><strong>${escapeHtml(priv.phone)}</strong></div>
@@ -3455,6 +3564,250 @@
 
           ${fundDashboardHtml}
         </div>`;
+    }
+
+
+    function leaveStatusClass(status) {
+      return String(status || "").toLowerCase().replaceAll(" ", "-");
+    }
+
+    function calculateLeaveDays(fromDate, toDate) {
+      if (!fromDate || !toDate) return 0;
+      const from = new Date(fromDate + "T00:00:00");
+      const to = new Date(toDate + "T00:00:00");
+      if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || to < from) return 0;
+      return Math.floor((to - from) / 86400000) + 1;
+    }
+
+    async function buildStudentLeaveApplicationBox(studentId) {
+      const result = await db.from("leave_applications").select("*").eq("student_id", studentId).order("created_at", { ascending: false });
+      const rows = result.error ? [] : (result.data || []);
+      const pending = rows.some(r => ["Submitted", "Manager Recommended"].includes(r.status));
+      const tableRows = rows.length ? rows.map(r => `
+        <tr>
+          <td>${escapeHtml(formatDate(r.created_at))}</td>
+          <td>${escapeHtml(r.leave_type)}</td>
+          <td>${escapeHtml(r.from_date)}</td>
+          <td>${escapeHtml(r.to_date)}</td>
+          <td>${escapeHtml(r.total_days)}</td>
+          <td>${escapeHtml(r.reason)}</td>
+          <td><span class="leave-status ${leaveStatusClass(r.status)}">${escapeHtml(r.status)}</span></td>
+          <td>${escapeHtml(r.manager_note)}</td>
+          <td>${escapeHtml(r.partner_note)}</td>
+        </tr>`).join("") : "<tr><td colspan='9'>No leave application found.</td></tr>";
+
+      return `
+        <div class="leave-form-card">
+          <hr style="border:none; border-top:1px solid var(--border); margin:18px 0;">
+          <h3>Apply for Leave</h3>
+          <p class="leave-flow-note">Your application will first go to the Manager. After Manager recommendation, it will go to the Partner for final approval.</p>
+          <div class="form-grid">
+            <div><label>Leave Type</label><select id="leaveType"><option value="">Select Leave Type</option><option>Casual Leave</option><option>Sick Leave</option><option>Emergency Leave</option><option>Study Leave</option><option>Other</option></select></div>
+            <div><label>Contact During Leave</label><input id="leaveContact" placeholder="Phone / contact (optional)"></div>
+            <div><label>From Date</label><input type="date" id="leaveFromDate" onchange="updateLeaveDayPreview()"></div>
+            <div><label>To Date</label><input type="date" id="leaveToDate" onchange="updateLeaveDayPreview()"></div>
+            <div><label>Total Days</label><input id="leaveDayPreview" value="0" readonly></div>
+            <div><label>Reason</label><input id="leaveReason" placeholder="Reason for leave"></div>
+          </div>
+          <div class="btn-row">
+            <button onclick="submitLeaveApplication()" ${pending ? "disabled" : ""}>Submit Leave Application</button>
+          </div>
+          ${pending ? '<div class="notice">You already have a leave application under review. Submit a new one after the current application is decided.</div>' : ''}
+
+          <h3>My Leave Applications</h3>
+          <table>
+            <thead><tr><th>Date</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Manager Note</th><th>Partner Note</th></tr></thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function updateLeaveDayPreview() {
+      const from = document.getElementById("leaveFromDate");
+      const to = document.getElementById("leaveToDate");
+      const preview = document.getElementById("leaveDayPreview");
+      if (preview) preview.value = calculateLeaveDays(from ? from.value : "", to ? to.value : "");
+    }
+
+    async function submitLeaveApplication() {
+      if (!currentProfile || !["student", "manager"].includes(currentProfile.role) || !currentProfile.student_id) {
+        showMessage("Only an active student can submit a leave application.", "error");
+        return;
+      }
+
+      const leaveType = document.getElementById("leaveType").value;
+      const fromDate = document.getElementById("leaveFromDate").value;
+      const toDate = document.getElementById("leaveToDate").value;
+      const reason = document.getElementById("leaveReason").value.trim();
+      const contact = document.getElementById("leaveContact").value.trim();
+
+      if (!leaveType || !fromDate || !toDate || !reason) {
+        showMessage("Leave type, from date, to date and reason are required.", "error");
+        return;
+      }
+      if (calculateLeaveDays(fromDate, toDate) < 1) {
+        showMessage("Please provide a valid leave date range.", "error");
+        return;
+      }
+
+      const result = await db.rpc("submit_leave_application", {
+        p_leave_type: leaveType,
+        p_from_date: fromDate,
+        p_to_date: toDate,
+        p_reason: reason,
+        p_contact_during_leave: contact || null
+      });
+
+      if (result.error) {
+        showMessage("Leave application failed: " + result.error.message, "error");
+        return;
+      }
+
+      await loadStudentDashboard();
+      if (isCurrentUserManager()) await loadManagerLeaveData();
+      showMessage("Leave application submitted to Manager for recommendation.", "success");
+    }
+
+    function isCurrentUserManager() {
+      if (!currentProfile) return false;
+      if (currentProfile.role === "manager") return true;
+      const row = students.find(s => s.student_id === currentProfile.student_id);
+      return currentProfile.role === "student" && row && row.designation === "Manager" && row.status === "Active";
+    }
+
+    async function configureManagerLeaveAccess() {
+      const btn = document.getElementById("managerLeaveTabBtn");
+      if (!btn) return;
+      if (isCurrentUserManager()) {
+        btn.classList.remove("hidden");
+        await loadManagerLeaveData();
+      } else {
+        btn.classList.add("hidden");
+      }
+    }
+
+    async function loadManagerLeaveData() {
+      if (!isCurrentUserManager() && !(currentProfile && currentProfile.role === "manager")) return;
+      const result = await db.from("leave_applications").select("*").order("created_at", { ascending: false });
+      leaveApplications = result.error ? [] : (result.data || []);
+      renderManagerLeaveTable();
+    }
+
+    function renderManagerLeaveTable() {
+      const tbody = document.getElementById("managerLeaveTable");
+      if (!tbody) return;
+      if (!leaveApplications.length) {
+        tbody.innerHTML = "<tr><td colspan='11'>No leave application found.</td></tr>";
+        return;
+      }
+      tbody.innerHTML = leaveApplications.map(r => {
+        const canReview = r.status === "Submitted" && (!currentProfile.student_id || r.student_id !== currentProfile.student_id);
+        const action = canReview
+          ? `<button class="success" onclick="managerReviewLeave('${escapeAttribute(r.id)}','recommend')">Recommend</button> <button class="danger" onclick="managerReviewLeave('${escapeAttribute(r.id)}','reject')">Reject</button>`
+          : (r.status === "Submitted" ? "Own application" : "Reviewed");
+        return `<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.student_id)}</td><td>${escapeHtml(r.applicant_name)}</td><td>${escapeHtml(r.branch)}</td><td>${escapeHtml(r.leave_type)}</td><td>${escapeHtml(r.from_date)}</td><td>${escapeHtml(r.to_date)}</td><td>${escapeHtml(r.total_days)}</td><td>${escapeHtml(r.reason)}</td><td><span class="leave-status ${leaveStatusClass(r.status)}">${escapeHtml(r.status)}</span></td><td>${action}</td></tr>`;
+      }).join("");
+    }
+
+    async function managerReviewLeave(leaveId, decision) {
+      if (!isCurrentUserManager() && !(currentProfile && currentProfile.role === "manager")) {
+        showMessage("Only the Manager can review leave applications.", "error");
+        return;
+      }
+      const note = prompt(decision === "recommend" ? "Manager recommendation note (optional):" : "Reason for rejection (optional):", "") || "";
+      const result = await db.rpc("manager_review_leave", {
+        p_leave_id: leaveId,
+        p_decision: decision,
+        p_note: note || null
+      });
+      if (result.error) {
+        showMessage("Manager review failed: " + result.error.message, "error");
+        return;
+      }
+      await loadManagerLeaveData();
+      await loadStudentDashboard();
+      showMessage(decision === "recommend" ? "Leave recommended and sent to Partner." : "Leave application rejected by Manager.", "success");
+    }
+
+    async function loadPartnerData() {
+      if (!currentProfile || currentProfile.role !== "partner") return;
+      const profileResult = await db.from("partner_profiles").select("*").eq("user_id", currentUser.id).maybeSingle();
+      partnerProfile = profileResult.error ? null : profileResult.data;
+      const leaveResult = await db.from("leave_applications").select("*").order("created_at", { ascending: false });
+      leaveApplications = leaveResult.error ? [] : (leaveResult.data || []);
+      renderPartnerProfile();
+      renderPartnerLeaveTable();
+      renderPartnerStudentList();
+    }
+
+    function renderPartnerProfile() {
+      const box = document.getElementById("partnerProfileBox");
+      if (!box) return;
+      const p = partnerProfile || {};
+      const name = p.full_name || currentProfile.full_name || "Partner";
+      const email = p.email || currentProfile.email || (currentUser ? currentUser.email : "");
+      const designation = p.designation || "Partner";
+      box.innerHTML = `<div class="partner-profile-box">
+        <div class="partner-profile-photo">${p.photo_url ? `<img src="${escapeHtml(p.photo_url)}">` : escapeHtml(getInitials(name))}</div>
+        <div>
+          <h2>${escapeHtml(name)}</h2>
+          <div class="info"><span>Designation</span><strong>${escapeHtml(designation)}</strong></div>
+          <div class="info"><span>Email</span><strong>${escapeHtml(email)}</strong></div>
+          <div class="info"><span>Phone</span><strong>${escapeHtml(p.phone)}</strong></div>
+          <div class="info"><span>Status</span><strong class="active-status">${escapeHtml(p.status || currentProfile.status || "Active")}</strong></div>
+        </div>
+      </div>`;
+    }
+
+    function renderPartnerLeaveTable() {
+      const tbody = document.getElementById("partnerLeaveTable");
+      if (!tbody) return;
+      if (!leaveApplications.length) {
+        tbody.innerHTML = "<tr><td colspan='11'>No Manager-recommended leave application found.</td></tr>";
+        return;
+      }
+      tbody.innerHTML = leaveApplications.map(r => {
+        const canReview = r.status === "Manager Recommended";
+        const action = canReview
+          ? `<button class="success" onclick="partnerReviewLeave('${escapeAttribute(r.id)}','approve')">Approve</button> <button class="danger" onclick="partnerReviewLeave('${escapeAttribute(r.id)}','reject')">Reject</button>`
+          : "Decided";
+        return `<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.student_id)}</td><td>${escapeHtml(r.applicant_name)}</td><td>${escapeHtml(r.branch)}</td><td>${escapeHtml(r.leave_type)}</td><td>${escapeHtml(r.from_date)}</td><td>${escapeHtml(r.to_date)}</td><td>${escapeHtml(r.total_days)}</td><td>${escapeHtml(r.manager_note)}</td><td><span class="leave-status ${leaveStatusClass(r.status)}">${escapeHtml(r.status)}</span></td><td>${action}</td></tr>`;
+      }).join("");
+    }
+
+    async function partnerReviewLeave(leaveId, decision) {
+      if (!currentProfile || currentProfile.role !== "partner") {
+        showMessage("Only Partner can approve or reject leave applications.", "error");
+        return;
+      }
+      const note = prompt(decision === "approve" ? "Partner note (optional):" : "Reason for rejection (optional):", "") || "";
+      const result = await db.rpc("partner_review_leave", {
+        p_leave_id: leaveId,
+        p_decision: decision,
+        p_note: note || null
+      });
+      if (result.error) {
+        showMessage("Partner decision failed: " + result.error.message, "error");
+        return;
+      }
+      await loadPartnerData();
+      showMessage(decision === "approve" ? "Leave approved successfully." : "Leave rejected by Partner.", "success");
+    }
+
+    function renderPartnerStudentList() {
+      const tbody = document.getElementById("partnerStudentTable");
+      if (!tbody) return;
+      const searchEl = document.getElementById("partnerStudentSearch");
+      const search = searchEl ? searchEl.value.toLowerCase() : "";
+      const rows = students.filter(s =>
+        s.status === "Active" && (
+          safe(s.student_id).toLowerCase().includes(search) ||
+          safe(s.full_name).toLowerCase().includes(search) ||
+          safe(s.designation).toLowerCase().includes(search) ||
+          safe(s.branch).toLowerCase().includes(search)
+        )
+      );
+      tbody.innerHTML = rows.length ? rows.map(s => `<tr><td>${escapeHtml(s.student_id)}</td><td>${escapeHtml(s.full_name)}</td><td>${escapeHtml(s.designation)}</td><td>${escapeHtml(s.branch)}</td><td>${escapeHtml(s.ca_level)}</td><td><span class="active-status">${escapeHtml(s.status)}</span></td><td><button onclick="openPublicProfile('${escapeAttribute(s.student_id)}')">View Profile</button></td></tr>`).join("") : "<tr><td colspan='7'>No active profile found.</td></tr>";
     }
 
     async function loadStudentDashboard() {
