@@ -2419,16 +2419,27 @@
       color: #ffffff !important;
     }
 
+    #studentProfileLeavePanel .btn-row {
+      margin: 10px 0 20px !important;
+      align-items: center !important;
+    }
+
     #studentProfileLeavePanel .btn-row > button,
     #studentProfileLeavePanel button[onclick="submitLeaveApplication()"] {
       width: auto !important;
       min-width: 0 !important;
-      max-width: 220px !important;
-      min-height: 38px !important;
-      padding: 8px 14px !important;
-      border-radius: 11px !important;
-      font-size: 14px !important;
+      max-width: 180px !important;
+      min-height: 34px !important;
+      padding: 7px 12px !important;
+      border-radius: 10px !important;
+      font-size: 12px !important;
       line-height: 1.1 !important;
+      white-space: nowrap !important;
+    }
+
+    #studentProfileLeavePanel .leave-form-card > h3 {
+      margin-top: 14px !important;
+      clear: both !important;
     }
 
     @media (max-width: 1100px) {
@@ -2992,7 +3003,7 @@
               <option>Panthapath Branch</option>
               <option>Niketon Branch</option>
             </select></div>
-              <div><label>Fund Responsibility</label><select id="fundResponsibility"><option>Student</option><option>Fund Manager</option><option>Assistant Fund Manager</option></select></div>
+              <div><label>Fund Responsibility</label><select id="fundResponsibility"><option value="Student">Fund Member</option><option>Fund Manager</option><option>Assistant Fund Manager</option></select></div>
               <div><label>Status</label><select id="studentStatus"><option>Active</option><option>Inactive</option></select></div>
               <div class="master-credential-field"><label>Personal Email / Login Email</label><input type="email" id="studentLoginEmail" placeholder="student@email.com"></div>
               <div class="master-credential-field"><label>Temporary Login Password</label><input id="studentTempPassword" placeholder="Example: st123456"></div>
@@ -3416,7 +3427,7 @@
           <div class="public-photo">${s.photo_url ? `<img src="${escapeHtml(s.photo_url)}">` : escapeHtml(getInitials(s.full_name))}</div>
           <div>
             <h3 class="student-name" onclick="openPublicProfile('${escapeAttribute(s.student_id)}')">${escapeHtml(s.full_name)}</h3>
-            <div class="short-meta"><span>ID: ${escapeHtml(s.student_id)}</span><span>${escapeHtml(s.designation)}</span><span>${escapeHtml(s.branch)}</span><span>${escapeHtml(s.fund_responsibility || "Student")}</span><span>${escapeHtml(s.status)}</span></div>
+            <div class="short-meta"><span>ID: ${escapeHtml(s.student_id)}</span><span>${escapeHtml(s.designation)}</span><span>${escapeHtml(s.branch)}</span><span>${escapeHtml(s.status)}</span></div>
           </div>
         </div>`).join("");
     }
@@ -3447,7 +3458,6 @@
             <div class="info"><span>CA Level</span><strong>${escapeHtml(s.ca_level)}</strong></div>
             <div class="info"><span>CA Result</span><strong>${escapeHtml(s.ca_results)}</strong></div>
             <div class="info"><span>Branch</span><strong>${escapeHtml(s.branch)}</strong></div>
-            <div class="info"><span>Fund Responsibility</span><strong>${escapeHtml(s.fund_responsibility || "Student")}</strong></div>
             <div class="info"><span>Status</span><strong class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</strong></div>
           </div>
         </div>`;
@@ -3857,7 +3867,7 @@
               <div class="info"><span>CA Level</span><strong>${escapeHtml(pub.ca_level)}</strong></div>
               <div class="info"><span>CA Result</span><strong>${escapeHtml(pub.ca_results)}</strong></div>
               <div class="info"><span>Branch</span><strong>${escapeHtml(pub.branch)}</strong></div>
-              <div class="info"><span>Fund Responsibility</span><strong>${escapeHtml(pub.fund_responsibility || "Student")}</strong></div>
+              <div class="info"><span>Fund Member Role</span><strong>${escapeHtml(pub.fund_responsibility && pub.fund_responsibility !== "Student" ? pub.fund_responsibility : "Fund Member")}</strong></div>
               <div class="info"><span>Status</span><strong class="${pub.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(pub.status)}</strong></div>
 
               <h3>Private Details</h3>
@@ -4033,17 +4043,15 @@
     function renderManagerLeaveTable() {
       const tbody = document.getElementById("managerLeaveTable");
       if (!tbody) return;
-      if (!leaveApplications.length) {
-        tbody.innerHTML = "<tr><td colspan='11'>No leave application found.</td></tr>";
-        return;
-      }
-      tbody.innerHTML = leaveApplications.map(r => {
-        const canReview = r.status === "Submitted" && (!currentProfile.student_id || r.student_id !== currentProfile.student_id);
+
+      const pendingRows = leaveApplications.filter(r => r.status === "Submitted");
+      tbody.innerHTML = pendingRows.length ? pendingRows.map(r => {
+        const canReview = !currentProfile.student_id || r.student_id !== currentProfile.student_id;
         const action = canReview
           ? `<button class="success" onclick="managerReviewLeave('${escapeAttribute(r.id)}','recommend')">Recommend</button> <button class="danger" onclick="managerReviewLeave('${escapeAttribute(r.id)}','reject')">Reject</button>`
-          : (r.status === "Submitted" ? "Own application" : "Reviewed");
+          : "Own application";
         return `<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.student_id)}</td><td>${escapeHtml(r.applicant_name)}</td><td>${escapeHtml(r.branch)}</td><td>${escapeHtml(r.leave_type)}</td><td>${escapeHtml(r.from_date)}</td><td>${escapeHtml(r.to_date)}</td><td>${escapeHtml(r.total_days)}</td><td>${escapeHtml(r.reason)}</td><td><span class="leave-status ${leaveStatusClass(r.status)}">${escapeHtml(r.status)}</span></td><td>${action}</td></tr>`;
-      }).join("");
+      }).join("") : "<tr><td colspan='11'>No leave application waiting for Manager recommendation.</td></tr>";
     }
 
     async function managerReviewLeave(leaveId, decision) {
@@ -4099,17 +4107,12 @@
     function renderPartnerLeaveTable() {
       const tbody = document.getElementById("partnerLeaveTable");
       if (!tbody) return;
-      if (!leaveApplications.length) {
-        tbody.innerHTML = "<tr><td colspan='11'>No Manager-recommended leave application found.</td></tr>";
-        return;
-      }
-      tbody.innerHTML = leaveApplications.map(r => {
-        const canReview = r.status === "Manager Recommended";
-        const action = canReview
-          ? `<button class="success" onclick="partnerReviewLeave('${escapeAttribute(r.id)}','approve')">Approve</button> <button class="danger" onclick="partnerReviewLeave('${escapeAttribute(r.id)}','reject')">Reject</button>`
-          : "Decided";
+
+      const pendingRows = leaveApplications.filter(r => r.status === "Manager Recommended");
+      tbody.innerHTML = pendingRows.length ? pendingRows.map(r => {
+        const action = `<button class="success" onclick="partnerReviewLeave('${escapeAttribute(r.id)}','approve')">Approve</button> <button class="danger" onclick="partnerReviewLeave('${escapeAttribute(r.id)}','reject')">Reject</button>`;
         return `<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.student_id)}</td><td>${escapeHtml(r.applicant_name)}</td><td>${escapeHtml(r.branch)}</td><td>${escapeHtml(r.leave_type)}</td><td>${escapeHtml(r.from_date)}</td><td>${escapeHtml(r.to_date)}</td><td>${escapeHtml(r.total_days)}</td><td>${escapeHtml(r.manager_note)}</td><td><span class="leave-status ${leaveStatusClass(r.status)}">${escapeHtml(r.status)}</span></td><td>${action}</td></tr>`;
-      }).join("");
+      }).join("") : "<tr><td colspan='11'>No Manager-recommended leave application found.</td></tr>";
     }
 
     async function partnerReviewLeave(leaveId, decision) {
@@ -5223,7 +5226,7 @@
           ? `<button class="dark" onclick="deleteStudent('${escapeAttribute(s.student_id)}')">Delete</button>`
           : "";
 
-        return `<tr><td>${escapeHtml(s.student_id)}</td><td>${escapeHtml(s.full_name)}</td><td>${escapeHtml(s.designation)}</td><td>${escapeHtml(s.registration_no)}</td><td>${escapeHtml(s.ca_results)}</td><td>${escapeHtml(s.cc_complete_date)}</td><td>${escapeHtml(s.branch)}</td><td>${escapeHtml(s.fund_responsibility || "Student")}</td><td><span class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</span></td><td>${viewProfileButton}<button class="warning" onclick="editStudent('${escapeAttribute(s.student_id)}')">Edit</button><button class="danger" onclick="deactivateStudent('${escapeAttribute(s.student_id)}')">Deactivate</button>${deleteButton}</td></tr>`;
+        return `<tr><td>${escapeHtml(s.student_id)}</td><td>${escapeHtml(s.full_name)}</td><td>${escapeHtml(s.designation)}</td><td>${escapeHtml(s.registration_no)}</td><td>${escapeHtml(s.ca_results)}</td><td>${escapeHtml(s.cc_complete_date)}</td><td>${escapeHtml(s.branch)}</td><td>${escapeHtml(s.fund_responsibility && s.fund_responsibility !== "Student" ? s.fund_responsibility : "Fund Member")}</td><td><span class="${s.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(s.status)}</span></td><td>${viewProfileButton}<button class="warning" onclick="editStudent('${escapeAttribute(s.student_id)}')">Edit</button><button class="danger" onclick="deactivateStudent('${escapeAttribute(s.student_id)}')">Deactivate</button>${deleteButton}</td></tr>`;
       }).join("") : "<tr><td colspan='10'>No student found.</td></tr>";
     }
 
