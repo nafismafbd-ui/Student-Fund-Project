@@ -2191,7 +2191,83 @@
       .partner-profile-photo { max-width: 240px; }
     }
 
-  </style>
+  
+
+    /* My Profile section heads: Fund / CA Results Update / Leave Application */
+    .student-profile-main-card {
+      margin-bottom: 18px;
+    }
+
+    .student-profile-section-heads {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .student-profile-section-head {
+      width: 100%;
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 15px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(127, 29, 29, 0.18);
+      background: linear-gradient(145deg, #ffffff, #f8f3f3);
+      color: #2d1117;
+      box-shadow: 0 7px 0 rgba(127, 29, 29, 0.12), 0 13px 26px rgba(15, 23, 42, 0.09);
+      text-align: left;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+    }
+
+    .student-profile-section-head:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 9px 0 rgba(127, 29, 29, 0.14), 0 16px 30px rgba(15, 23, 42, 0.12);
+    }
+
+    .student-profile-section-head.active {
+      background: linear-gradient(145deg, #d91f26, #9f151a);
+      color: #ffffff;
+      border-color: #b91c1c;
+      box-shadow: 0 7px 0 #7f1d1d, 0 16px 30px rgba(185, 28, 28, 0.20);
+    }
+
+    .student-profile-section-head strong {
+      font-size: 20px;
+      line-height: 1.15;
+    }
+
+    .student-profile-section-head span {
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    .student-profile-detail-panel {
+      margin-top: 8px;
+    }
+
+    .student-profile-detail-panel.hidden {
+      display: none !important;
+    }
+
+    .student-profile-detail-panel > .card:first-child,
+    .student-profile-detail-panel > div > .card:first-child {
+      margin-top: 0;
+    }
+
+    @media (max-width: 900px) {
+      .student-profile-section-heads {
+        grid-template-columns: 1fr;
+      }
+      .student-profile-section-head {
+        min-height: 62px;
+      }
+    }
+</style>
 </head>
 
 <body>
@@ -3484,7 +3560,8 @@
         : "<tr><td colspan='5'>No CA update request found.</td></tr>";
 
       const studentCaEditBox = currentProfile && currentProfile.role === "student" && currentProfile.student_id === studentId
-        ? `<hr style="border:none; border-top:1px solid var(--border); margin:18px 0;">
+        ? `<div class="card">
+            <h2>CA Results Update</h2>
             <h3>Request CA Status Update</h3>
             <div class="form-grid">
               <div><label>CA Level</label><select id="studentEditCaLevel">${caLevelOptionsHtml(pub.ca_level || "")}</select></div>
@@ -3497,7 +3574,8 @@
             <table>
               <thead><tr><th>Date</th><th>Requested CA Level</th><th>Requested Result</th><th>Status</th><th>Review Note</th></tr></thead>
               <tbody>${myCaUpdateRows}</tbody>
-            </table>`
+            </table>
+          </div>`
         : "";
 
       const studentLeaveBox = currentProfile
@@ -3535,37 +3613,67 @@
           </div>`
         : "";
 
+      const ownProfile = currentProfile && currentProfile.student_id === studentId;
+      const canSeeCaUpdate = Boolean(studentCaEditBox);
+      const canSeeLeave = Boolean(studentLeaveBox);
+
+      const profileSectionHeads = [
+        isFundMember ? `<button class="student-profile-section-head" data-student-profile-head="fund" onclick="openStudentProfileDetail('fund', this)"><strong>Fund</strong><span>›</span></button>` : "",
+        canSeeCaUpdate ? `<button class="student-profile-section-head" data-student-profile-head="ca" onclick="openStudentProfileDetail('ca', this)"><strong>CA Results Update</strong><span>›</span></button>` : "",
+        canSeeLeave ? `<button class="student-profile-section-head" data-student-profile-head="leave" onclick="openStudentProfileDetail('leave', this)"><strong>Leave Application</strong><span>›</span></button>` : ""
+      ].filter(Boolean).join("");
+
       return `
-        <div class="profile-grid ${isFundMember ? "" : "no-fund"}">
-          <div class="card">
-            <div class="avatar">${pub.photo_url ? `<img src="${escapeHtml(pub.photo_url)}">` : escapeHtml(getInitials(pub.full_name))}</div>
-            <h2>${escapeHtml(pub.full_name)}</h2>
-            <p class="subtitle">${escapeHtml(pub.student_id)} | ${escapeHtml(pub.designation)}</p>
+        <div class="card student-profile-main-card">
+          <div class="avatar">${pub.photo_url ? `<img src="${escapeHtml(pub.photo_url)}">` : escapeHtml(getInitials(pub.full_name))}</div>
+          <h2>${escapeHtml(pub.full_name)}</h2>
+          <p class="subtitle">${escapeHtml(pub.student_id)} | ${escapeHtml(pub.designation)}</p>
 
-            <div class="info"><span>Registration No.</span><strong>${escapeHtml(pub.registration_no)}</strong></div>
-            <div class="info"><span>Joining Date</span><strong>${escapeHtml(pub.joining_date)}</strong></div>
-            <div class="info"><span>CC Complete Date</span><strong>${escapeHtml(pub.cc_complete_date)}</strong></div>
-            <div class="info"><span>CA Level</span><strong>${escapeHtml(pub.ca_level)}</strong></div>
-            <div class="info"><span>CA Result</span><strong>${escapeHtml(pub.ca_results)}</strong></div>
-            <div class="info"><span>Branch</span><strong>${escapeHtml(pub.branch)}</strong></div>
-            <div class="info"><span>Fund Responsibility</span><strong>${escapeHtml(pub.fund_responsibility || "Student")}</strong></div>
-            <div class="info"><span>Status</span><strong class="${pub.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(pub.status)}</strong></div>
+          <div class="info"><span>Registration No.</span><strong>${escapeHtml(pub.registration_no)}</strong></div>
+          <div class="info"><span>Joining Date</span><strong>${escapeHtml(pub.joining_date)}</strong></div>
+          <div class="info"><span>CC Complete Date</span><strong>${escapeHtml(pub.cc_complete_date)}</strong></div>
+          <div class="info"><span>CA Level</span><strong>${escapeHtml(pub.ca_level)}</strong></div>
+          <div class="info"><span>CA Result</span><strong>${escapeHtml(pub.ca_results)}</strong></div>
+          <div class="info"><span>Branch</span><strong>${escapeHtml(pub.branch)}</strong></div>
+          <div class="info"><span>Fund Responsibility</span><strong>${escapeHtml(pub.fund_responsibility || "Student")}</strong></div>
+          <div class="info"><span>Status</span><strong class="${pub.status === "Active" ? "active-status" : "inactive-status"}">${escapeHtml(pub.status)}</strong></div>
 
-            ${studentCaEditBox}
-            ${studentLeaveBox}
+          <h3>Private Details</h3>
+          <div class="info"><span>Phone</span><strong>${escapeHtml(priv.phone)}</strong></div>
+          <div class="info"><span>Email</span><strong>${escapeHtml(priv.email_private)}</strong></div>
+          <div class="info"><span>Birth Date</span><strong>${escapeHtml(priv.birth_date)}</strong></div>
+          <div class="info"><span>Address</span><strong>${escapeHtml(priv.address)}</strong></div>
+          <div class="info"><span>Notes</span><strong>${escapeHtml(priv.notes)}</strong></div>
+        </div>
 
-            <h3>Private Details</h3>
-            <div class="info"><span>Phone</span><strong>${escapeHtml(priv.phone)}</strong></div>
-            <div class="info"><span>Email</span><strong>${escapeHtml(priv.email_private)}</strong></div>
-            <div class="info"><span>Birth Date</span><strong>${escapeHtml(priv.birth_date)}</strong></div>
-            <div class="info"><span>Address</span><strong>${escapeHtml(priv.address)}</strong></div>
-            <div class="info"><span>Notes</span><strong>${escapeHtml(priv.notes)}</strong></div>
-          </div>
+        ${profileSectionHeads ? `<div class="student-profile-section-heads">${profileSectionHeads}</div>` : ""}
 
-          ${fundDashboardHtml}
-        </div>`;
+        ${isFundMember ? `<div id="studentProfileFundPanel" class="student-profile-detail-panel hidden">${fundDashboardHtml}</div>` : ""}
+        ${canSeeCaUpdate ? `<div id="studentProfileCaPanel" class="student-profile-detail-panel hidden">${studentCaEditBox}</div>` : ""}
+        ${canSeeLeave ? `<div id="studentProfileLeavePanel" class="student-profile-detail-panel hidden">${studentLeaveBox}</div>` : ""}
+      `;
     }
 
+
+
+    function openStudentProfileDetail(section, button) {
+      const panelMap = {
+        fund: "studentProfileFundPanel",
+        ca: "studentProfileCaPanel",
+        leave: "studentProfileLeavePanel"
+      };
+
+      document.querySelectorAll(".student-profile-detail-panel").forEach(panel => panel.classList.add("hidden"));
+      document.querySelectorAll(".student-profile-section-head").forEach(head => head.classList.remove("active"));
+
+      const panelId = panelMap[section];
+      const panel = panelId ? document.getElementById(panelId) : null;
+      if (panel) {
+        panel.classList.remove("hidden");
+        if (button) button.classList.add("active");
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
 
     function leaveStatusClass(status) {
       return String(status || "").toLowerCase().replaceAll(" ", "-");
