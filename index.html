@@ -2633,7 +2633,65 @@
       .partner-pro-roles { grid-template-columns: 1fr; }
     }
 
-  </style>
+  
+    /* Leave workflow: separate current applications and recent actions, especially on phones */
+    .leave-workflow-tab .leave-workflow-card {
+      margin-bottom: 18px;
+    }
+
+    .leave-workflow-tab .leave-workflow-card h2 {
+      margin-bottom: 16px;
+    }
+
+    .leave-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 14px;
+    }
+
+    .leave-table-wrap table {
+      margin: 0;
+    }
+
+    @media (max-width: 760px) {
+      .leave-workflow-tab .leave-workflow-card {
+        margin: 0 0 18px !important;
+        padding: 14px !important;
+        border-radius: 16px !important;
+        background: #ffffff !important;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.10) !important;
+      }
+
+      .leave-workflow-tab .leave-pending-card {
+        border-top: 4px solid #b91c1c !important;
+      }
+
+      .leave-workflow-tab .leave-history-card {
+        border-top: 4px solid #64748b !important;
+      }
+
+      .leave-workflow-tab .leave-workflow-card h2 {
+        font-size: 20px !important;
+        margin: 0 0 12px !important;
+      }
+
+      .leave-workflow-tab .leave-table-wrap {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+      }
+
+      .leave-workflow-tab .leave-table-wrap table {
+        display: table !important;
+        width: max-content !important;
+        min-width: 100% !important;
+        white-space: nowrap !important;
+      }
+    }
+</style>
 </head>
 
 <body>
@@ -3188,41 +3246,51 @@
       </div>
     </section>
 
-    <section id="managerLeaveTab" class="tab">
-      <div class="card">
+    <section id="managerLeaveTab" class="tab leave-workflow-tab">
+      <div class="card leave-workflow-card leave-pending-card">
         <h2>Leave Applications</h2>
-        <table>
-          <thead><tr><th>Date</th><th>ID</th><th>Name</th><th>Branch</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
-          <tbody id="managerLeaveTable"></tbody>
-        </table>
+        <div class="leave-table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>ID</th><th>Name</th><th>Branch</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="managerLeaveTable"></tbody>
+          </table>
+        </div>
+      </div>
 
-        <div style="height:22px"></div>
-        <h3 style="margin:0 0 12px;font-size:24px;">Last 7 Days Actions</h3>
-        <table>
-          <thead><tr><th>Action Date</th><th>ID</th><th>Name</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Manager Action</th><th>Manager Note</th><th>Current Status</th></tr></thead>
-          <tbody id="managerRecentLeaveTable"></tbody>
-        </table>
+      <div class="card leave-workflow-card leave-history-card">
+        <h2>Last 7 Days Actions</h2>
+        <div class="leave-table-wrap">
+          <table>
+            <thead><tr><th>Action Date</th><th>ID</th><th>Name</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Manager Action</th><th>Manager Note</th><th>Current Status</th></tr></thead>
+            <tbody id="managerRecentLeaveTable"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
-    <section id="partnerTab" class="tab">
+    <section id="partnerTab" class="tab leave-workflow-tab">
       <div class="partner-professional-card">
         <div id="partnerProfileBox"></div>
       </div>
 
-      <div class="card">
-        <h2>Leave Applications - Final Approval</h2>
-        <table>
-          <thead><tr><th>Date</th><th>ID</th><th>Name</th><th>Branch</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Manager Note</th><th>Status</th><th>Action</th></tr></thead>
-          <tbody id="partnerLeaveTable"></tbody>
-        </table>
+      <div class="card leave-workflow-card leave-pending-card">
+        <h2>Leave Applications</h2>
+        <div class="leave-table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>ID</th><th>Name</th><th>Branch</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Manager Note</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="partnerLeaveTable"></tbody>
+          </table>
+        </div>
+      </div>
 
-        <div style="height:22px"></div>
-        <h3 style="margin:0 0 12px;font-size:24px;">Last 7 Days Actions</h3>
-        <table>
-          <thead><tr><th>Decision Date</th><th>ID</th><th>Name</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Final Status</th><th>Partner Note</th></tr></thead>
-          <tbody id="partnerRecentLeaveTable"></tbody>
-        </table>
+      <div class="card leave-workflow-card leave-history-card">
+        <h2>Last 7 Days Actions</h2>
+        <div class="leave-table-wrap">
+          <table>
+            <thead><tr><th>Decision Date</th><th>ID</th><th>Name</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Final Status</th><th>Partner Note</th></tr></thead>
+            <tbody id="partnerRecentLeaveTable"></tbody>
+          </table>
+        </div>
       </div>
     </section>
   </main>
